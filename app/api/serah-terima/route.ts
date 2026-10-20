@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
+import { isAdmin } from "@/lib/auth";
+import { requireUser, isResponse, fail } from "@/lib/http";
+
+export async function GET() {
+  const user = await requireUser();
+  if (isResponse(user)) return user;
+  if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul serah-terima.", 403);
+  try {
+    const [rows] = await db.execute<DBRow[]>("SELECT id, nama, jabatan, tujuan, tanggal, keperluan, jumlah, cabang FROM tb_serah_terima ORDER BY tanggal DESC, id ASC LIMIT 1500");
+    return NextResponse.json({ success: true, data: rows });
+  } catch (error) { return fail(databaseErrorMessage(error), 500); }
+}
+export async function POST(request: NextRequest) {
+  const user = await requireUser();
+  if (isResponse(user)) return user;
+  if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul serah-terima.", 403);
+  try {
+    const body = await request.json();
+    const nama = String(body.nama ?? user.nama ?? "").trim(); const jabatan = String(body.jabatan ?? user.jabatan ?? "").trim();
+    const tujuan = String(body.tujuan ?? "").trim(); const tanggal = String(body.tanggal ?? "").trim();
+    const items = Array.isArray(body.items) ? body.items : [];
+    if (!nama || !jabatan || !tujuan || !tanggal || !items.length) return fail("Nama, jabatan, tujuan, tanggal, dan minimal satu keperluan wajib diisi.");
+    if (items.some((x: Record<string, unknown>) => !String(x.keperluan ?? "").trim())) return fail("Deskripsi keperluan tidak boleh kosong.");
+    let conn;
+    try {
+      conn = await db.getConnection(); await conn.beginTransaction();
+      const [dateYear, dateMonth, dateDay] = tanggal.split("-");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) throw new Error("Tanggal tidak valid.");
+      const datePrefix = `${dateYear}${dateMonth}${dateDay}`;
+      const [found] = await conn.execute<DBRow[]>("SELECT id FROM tb_serah_terima WHERE id LIKE ? FOR UPDATE", [`${datePrefix}-%`]);
+      let maxNum = 0;
+      for (const row of found) { const m = String(row.id).match(/-(\d+)[a-z]$/); if (m) maxNum = Math.max(maxNum, Number(m[1])); }
+      let number = maxNum + 1; let charCode = 97;
+      for (const item of items) {
+        const id = `${datePrefix}-${String(number).padStart(3, "0")}${String.fromCharCode(charCode)}`;
+        await conn.execute("INSERT INTO tb_serah_terima (id, nama, jabatan, tujuan, tanggal, keperluan, jumlah, cabang) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [id, nama, jabatan, tujuan, tanggal, String(item.keperluan).trim(), String(item.jumlah ?? "").trim(), String(item.cabang ?? "").trim()]);
+        charCode++;
+        if (charCode > 122) { charCode = 97; number++; }
+      }
+      await conn.commit();
+      return NextResponse.json({ success: true, message: `${items.length} baris serah-terima disimpan.` }, { status: 201 });
+    } catch (error) { if (conn) await conn.rollback(); throw error; }
+    finally { conn?.release(); }
+  } catch (error) { return fail(databaseErrorMessage(error), 400); }
+}
+export async function DELETE(request: NextRequest) {
+  const user = await requireUser();
+  if (isResponse(user)) return user;
+  if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul serah-terima.", 403);
+  if (!isAdmin(user)) return fail("Hanya Admin atau Creator yang bisa menghapus serah-terima.", 403);
+  try {
+    const body = await request.json(); const id = String(body.id ?? "").trim();
+    if (!id) return fail("ID serah-terima tidak valid.");
+    await db.execute("DELETE FROM tb_serah_terima WHERE id = ?", [id]);
+    return NextResponse.json({ success: true, message: "Catatan serah-terima dihapus." });
+  } catch (error) { return fail(databaseErrorMessage(error), 500); }
+}

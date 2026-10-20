@@ -1,0 +1,823 @@
+body {
+    background-color: #eef1f4;
+    margin-bottom: 35px;
+}
+
+/* Container utama untuk input per baris */
+.allocation-row {
+    background: #ffffff;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+/* Di Mobile: Buat input bertumpuk */
+@media screen and (max-width: 768px) {
+    .allocation-row .columns.is-mobile {
+        display: block; /* Matikan sistem kolom di mobile agar stack */
+    }
+    .allocation-row .column {
+        width: 100% !important;
+        padding: 5px 0 !important;
+    }
+    .btn-delete-row-mobile {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        color: #ff3860;
+    }
+}
+
+/* Tombol tambah cabang yang lebih "klik-able" */
+.add-cabang-btn {
+    border: 1px dashed #3273dc !important;
+    background: #f0f5ff !important;
+    margin-top: 5px;
+    height: 40px;
+}
+
+/* Modal Background agak gelap agar kartu menonjol */
+.modal-card-body {
+    background-color: #f5f7fa; 
+    padding: 20px;
+}
+
+/* Style Kartu Produk */
+.product-box {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    border: none; /* Hilangkan border garis */
+    overflow: hidden;
+}
+
+/* Header di dalam kartu (Nama & Stok) */
+.product-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Badge Stok yang mencolok */
+.stok-badge {
+    background-color: #eefff5;
+    color: #25a264;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+/* Area Input */
+.input-area {
+    padding: 20px;
+}
+
+/* Tombol Hapus Baris (Icon Sampah) */
+.btn-delete-row {
+    color: #ff3860;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+.btn-delete-row:hover {
+    opacity: 1;
+    background-color: #fff0f3;
+    border-radius: 4px;
+}
+
+@font-face {
+    font-family: "Facon";
+    src: url("../asset/facon.ttf") format("truetype");
+    font-weight: bold;
+    font-style: italic;
+}
+
+.judul {
+    font-family: "Facon", sans-serif;
+    font-weight: bold;
+    font-style: italic;
+    font-size: 50px;
+}
+
+/* Hide desktop buttons on mobile */
+@media (max-width: 639px) {
+    .desktop-buttons {
+        display: none;
+    }
+}
+
+.card img {
+    pointer-events: none;
+}
+
+.ts-dropdown {
+  z-index: 99999;
+  max-height: 250px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f3f4f6;
+}
+
+.ts-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+.ts-dropdown::-webkit-scrollbar-thumb {
+  background-color: #9ca3af;
+  border-radius: 10px;
+}
+.ts-dropdown::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.ts-control {
+  background-color: #fff;
+}
+.ts-control:hover {
+  border-color: #9ae6b4; /* soft green hover */
+}
+.ts-control.dropdown-active {
+  border-color: #34d399; /* green-400 */
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.25);
+}
+
+.ts-control .clear-button {
+    background: none !important;
+    border: none !important;
+    color: #999;
+    font-size: 1rem;
+    margin-left: 6px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.ts-control .clear-button:hover {
+    color: #dc2626; /* merah lembut */
+}
+
+/* ===============================
+   GRID & CARD RESPONSIVE (FIXED)
+   =============================== */
+
+/* Pastikan columns tetap flex */
+#grid-kartu {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.card-media img {
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+/* MOBILE: 2 card per row */
+@media (max-width: 768px) {
+    #grid-kartu .column {
+        flex: 0 0 50%;
+        max-width: 50%;
+        display: flex;
+    }
+
+    #grid-kartu .column .card {
+        display: flex;
+        flex-direction: column;
+        flex: 1; /* card ikut tinggi column */
+    }
+
+    #grid-kartu .column .card .card-inner {
+        flex: 1; /* isi card ikut stretch */
+    }
+}
+
+
+/* TABLET & UP: equal height cards */
+@media (min-width: 769px) {
+    #grid-kartu .column {
+        display: flex;
+    }
+
+    #grid-kartu .card {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    #grid-kartu .card-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+}
+
+.checkbox-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;   /* dari kanan -> kiri */
+    z-index: 3;
+}
+
+.hapus-checkbox {
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    accent-color: #3b82f6;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    border-radius: 50%;
+}
+
+
+/* ===============================
+   TITLE CLAMP (STABLE HEIGHT)
+   =============================== */
+
+.card .title.is-5 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@media (min-width: 769px) {
+    .card .title.is-5 {
+        min-height: 2.6em;
+    }
+}
+
+/* ===============================
+   SUBTITLE STABILITY (DESKTOP)
+   =============================== */
+
+@media (min-width: 769px) {
+    .card-content .subtitle {
+        min-height: 1.4em;
+    }
+}
+
+/* ===============================
+   EXPIRED INLINE BADGE
+   =============================== */
+
+.expired-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.expired-status-badge {
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    line-height: 1.2;
+    color: #ffffff;
+}
+
+.badge-inline-safe {
+    background-color: #22c55e;
+}
+
+.badge-inline-warning {
+    background-color: #facc15;
+    color: #1f2937;
+}
+
+.badge-inline-expired {
+    background-color: #ef4444;
+}
+
+/* ===============================
+   STICKY TOOLBAR
+   =============================== */
+
+.toolbar-sticky{
+    display:flex;
+    align-items:center;
+    gap:1rem;
+    padding:.75rem 1rem;
+}
+
+.toolbar-left{
+    display:flex;
+    gap:.5rem;
+}
+
+.toolbar-filter{
+    flex:1;
+    display:flex;
+    justify-content:center;
+}
+
+.toolbar-right{
+    display:flex;
+    gap:.5rem;
+    margin-left:auto;
+}
+
+/* ===============================
+   MOBILE BEHAVIOR
+   =============================== */
+
+@media (max-width: 768px) {
+
+    .toolbar-sticky {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar-filter {
+        width: 100%;
+    }
+
+    .toolbar-filter .select,
+    .toolbar-filter select {
+        width: 100%;
+    }
+
+    .toolbar-right {
+        width: 100%;
+    }
+
+    .toolbar-right .field {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .toolbar-right .control {
+        flex: 1;
+    }
+
+    .toolbar-right .input,
+    .toolbar-right .button {
+        width: 100%;
+    }
+}
+
+/* ===== CARD BASE ===== */
+/* =========================
+   CARD BASE
+========================= */
+.card-responsive {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow:
+        0 6px 18px rgba(0,0,0,0.08),
+        0 2px 6px rgba(0,0,0,0.06);
+    transition: transform .15s ease, box-shadow .15s ease;
+
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-responsive:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 10px 24px rgba(0,0,0,0.12),
+        0 4px 10px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   INNER LAYOUT
+========================= */
+.card-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* =========================
+   IMAGE
+========================= */
+.card-media {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+}
+
+.card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+/* =========================
+   CONTENT
+========================= */
+.card-body {
+    padding: 0.75rem;
+
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* =========================
+   TITLE (STABLE HEIGHT)
+========================= */
+.nama-barang {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+    max-height: 2.6em;
+    min-height: 2.6em; /* 🔥 penting biar rata */
+    position: relative;
+    cursor: pointer;
+}
+
+/* =========================
+   TOOLTIP
+========================= */
+.nama-barang::after {
+    content: attr(data-full);
+    position: absolute;
+    left: 0;
+    bottom: 120%;
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    white-space: normal;
+    max-width: 220px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(4px);
+    transition: all .2s ease;
+    z-index: 999;
+}
+
+.nama-barang:hover::after,
+.nama-barang:active::after {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* =========================
+   TEXT STABILITY
+========================= */
+.card-body p {
+    margin-bottom: 4px;
+}
+
+.expired-inline {
+    min-height: 36px;
+}
+
+/* =========================
+   BULMA FIX (IMPORTANT)
+========================= */
+.columns.is-multiline {
+    align-items: stretch;
+}
+
+/* =========================
+   DESKTOP MODE (HORIZONTAL)
+========================= */
+@media (min-width: 1024px) {
+    .card-inner {
+        flex-direction: row;
+        height: 150px;
+    }
+
+    .card-media {
+        flex: 0 0 40%;
+        aspect-ratio: auto;
+    }
+
+    .card-media figure,
+    .card-media img {
+        height: 100%;
+    }
+
+    .card-body {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+/* =========================
+   EXTRA UI (UNCHANGED)
+========================= */
+.product-box .box {
+    transition: all 0.2s ease;
+}
+
+.product-box .box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+}
+
+.add-row-btn:hover {
+    background: #f5faff;
+    border-color: #3273dc;
+}
+
+.allocation-row {
+    transition: all 0.2s ease;
+}
+
+.allocation-row:hover {
+    border-color: #3273dc;
+}
+
+@media (max-width: 768px) {
+    .modal-card-foot {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        border-top: 1px solid #eee;
+    }
+}
+
+/* ===============================
+   BOTTOM NAVBAR (MOBILE)
+   =============================== */
+
+.bottom-navbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+
+    padding: 6px 0;
+    z-index: 20;
+
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+}
+
+/* tombol */
+.nav-btn {
+    background: none;
+    border: none;
+    outline: none;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 0.7rem;
+    color: #6b7280;
+
+    flex: 1;
+    padding: 6px 0;
+
+    transition: all 0.2s ease;
+}
+
+/* icon */
+.nav-btn i {
+    width: 20px;
+    height: 20px;
+    margin-bottom: 2px;
+}
+
+/* hover / active */
+.nav-btn:hover {
+    color: #3b82f6;
+}
+
+.nav-btn:active {
+    transform: scale(0.95);
+}
+
+/* disabled state */
+.nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* hide di desktop */
+@media (min-width: 640px) {
+    .bottom-navbar {
+        display: none;
+    }
+}
+
+/* kasih space biar konten ga ketutup navbar */
+body {
+    padding-bottom: 70px;
+}
+
+.install-app-btn{
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    bottom:85px;
+
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+    padding:12px 18px;
+    border:none;
+    border-radius:999px;
+
+    background:#1F3A5F;
+    color:#fff;
+    font-weight:600;
+
+    box-shadow:0 8px 24px rgba(0,0,0,.2);
+    z-index:99999;
+
+    animation:installFloat .4s ease;
+}
+
+.install-app-btn i{
+    width:18px;
+    height:18px;
+}
+
+@keyframes installFloat{
+    from{
+        opacity:0;
+        transform:translate(-50%,25px);
+    }
+    to{
+        opacity:1;
+        transform:translate(-50%,0);
+    }
+}
+
+@media (min-width:769px){
+    .install-app-btn{
+        display:none !important;
+    }
+}
+
+@media screen and (max-width:768px){
+    .icon-only{
+        width:44px;
+        height:40px;
+        padding:0;
+    }
+
+    .icon-only .icon{
+        margin:0 !important;
+        width:100%;
+        height:100%;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+    }
+}
+
+.toolbar-filter{
+    width:100%;
+    display:flex;
+    justify-content:center;
+}
+
+.filter-toolbar{
+    display:flex;
+    align-items:center;
+    width:100%;
+    max-width:520px;
+    background:#fff;
+    border:1px solid #dfe3ea;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 2px 10px rgba(0,0,0,.05);
+    height: 40px;
+}
+
+.select-toggle{
+    display:flex;
+    align-items:center;
+    gap:.65rem;
+    padding:0 18px;
+    height: 40px;
+    cursor:pointer;
+    user-select:none;
+    font-weight:600;
+    white-space:nowrap;
+    transition:.2s;
+}
+
+.select-toggle:hover{
+    background:#f6f8fb;
+}
+
+.select-toggle input{
+    display:none;
+}
+
+.check-icon{
+    width:22px;
+    height:22px;
+    border:2px solid #c9d1dc;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:.2s;
+}
+
+.check-icon svg{
+    width:14px;
+    height:14px;
+    opacity:0;
+}
+
+.select-toggle input:checked + .check-icon{
+    background:#485fc7;
+    border-color:#485fc7;
+    color:#fff;
+}
+
+.select-toggle input:checked + .check-icon svg{
+    opacity:1;
+}
+
+.filter-divider{
+    width:1px;
+    height:30px;
+    background:#e5e7eb;
+}
+
+.custom-filter{
+    flex:1;
+}
+
+.custom-filter::after{
+    border-color:#485fc7;
+}
+
+.custom-filter select{
+    border:none;
+    height: 40px;
+    box-shadow:none;
+    background:transparent;
+    font-weight:500;
+    padding-left:16px;
+}
+
+.custom-filter select:focus{
+    box-shadow:none;
+}
+
+@media (max-width:768px){
+
+    .filter-toolbar{
+        display:grid;
+        grid-template-columns:120px 1fr;
+        width:100%;
+        border-radius:14px;
+    }
+
+    .select-toggle{
+        justify-content:center;
+        border-right:1px solid var(--border);
+        padding: 0 14x;
+    }
+
+    .filter-divider{
+        display:none;
+    }
+
+    .custom-filter{
+        width:100%;
+    }
+
+    .custom-filter select{
+        border:none;
+        padding-left:10px;
+    }
+
+    .check-icon{
+        width:20px;
+        height:20px;
+        border-radius:5px;
+    }
+
+}
+
+.select-toggle.active{
+    background:#eef3ff;
+    color:#485fc7;
+}

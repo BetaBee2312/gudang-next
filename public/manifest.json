@@ -1,0 +1,10 @@
+{
+  "name": "Gudang Marketing",
+  "short_name": "Gudang",
+  "start_url": "/barang",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f4",
+  "theme_color": "#183c34",
+  "description": "Sistem pengelolaan inventori Gudang Marketing"
+}

@@ -1,0 +1,768 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  Archive,
+  Boxes,
+  CalendarClock,
+  Download,
+  ImagePlus,
+  Package,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+  Save,
+} from "lucide-react";
+import DashboardShell from "@/components/DashboardShell";
+import { requestJSON, shortDate, toDateInput } from "@/lib/client";
+
+type Product = {
+  id_barang: string;
+  gambar?: string | null;
+  nama_barang: string;
+  kategori: string;
+  expired?: string | null;
+  qty_awal: number;
+  qty_terkini: number;
+  teralokasi: number;
+  bulan: string;
+  plu?: string | null;
+};
+
+// Menambahkan field newImage khusus untuk menyimpan data file foto di Edit Massal
+type BulkRow = {
+  id_barang: string;
+  nama_barang: string;
+  kategori: string;
+  expired: string;
+  qty_awal: string;
+  qty_terkini: string;
+  plu: string;
+  newImage?: File | null; 
+};
+
+const categories = ["Marketing", "MD", "Marketing-D53", "MD-D53", "Marketing-DGBG", "MD-DGBG"];
+const emptyForm = { nama_barang: "", kategori: "Marketing", expired: "", qty_awal: "0", qty_terkini: "0", plu: "" };
+
+export default function InventoryPage({ habis = false }: { habis?: boolean }) {
+  const [items, setItems] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
+
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [admin, setAdmin] = useState(false);
+
+  const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [form, setForm] = useState(emptyForm);
+  const [image, setImage] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [bulkModal, setBulkModal] = useState(false);
+  const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
+  const [bulkSaving, setBulkSaving] = useState(false);
+
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await requestJSON<{ data: Product[] }>(`/api/barang?habis=${habis ? 1 : 0}`);
+      setItems(data.data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal memuat barang.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+    requestJSON<{ user: { kategori: string } }>("/api/auth/me")
+      .then((d) => setAdmin(["admin", "creator"].includes((d.user?.kategori || "").toLowerCase())))
+      .catch(() => {});
+  }, [habis]);
+
+  const filtered = useMemo(
+    () =>
+      items.filter(
+        (item) =>
+          (!category || item.kategori === category) &&
+          `${item.nama_barang} ${item.id_barang} ${item.plu ?? ""}`.toLowerCase().includes(query.toLowerCase())
+      ),
+    [items, query, category]
+  );
+
+  const totalQty = items.reduce((sum, item) => sum + Number(item.qty_terkini || 0), 0);
+
+  function openAdd() {
+    setEditing(null);
+    setForm(emptyForm);
+    setImage(null);
+    setModal(true);
+  }
+
+  function openEdit(item: Product) {
+    setEditing(item);
+    setForm({
+      nama_barang: item.nama_barang,
+      kategori: item.kategori,
+      expired: toDateInput(item.expired),
+      qty_awal: String(item.qty_awal),
+      qty_terkini: String(item.qty_terkini),
+      plu: item.plu ?? "",
+    });
+    setImage(null);
+    setModal(true);
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setToast("");
+    try {
+      if (editing) {
+        await requestJSON("/api/barang", {
+          method: "PATCH",
+          body: JSON.stringify({
+            id_barang: editing.id_barang,
+            nama_barang: form.nama_barang,
+            kategori: form.kategori,
+            expired: form.expired || null,
+            plu: form.plu || null,
+            qty_awal: Number(form.qty_awal),
+            qty_terkini: Number(form.qty_terkini),
+          }),
+        });
+      } else {
+        const data = new FormData();
+        data.set("nama_barang", form.nama_barang);
+        data.set("kategori", form.kategori);
+        data.set("expired", form.expired);
+        data.set("qty_awal", form.qty_awal);
+        data.set("plu", form.plu);
+        if (image) data.set("gambar", image);
+        await requestJSON("/api/barang", { method: "POST", body: data });
+      }
+      setModal(false);
+      setToast(editing ? "Barang diperbarui." : "Barang berhasil ditambahkan.");
+      await load();
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "Gagal menyimpan barang.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteSelected() {
+    if (!selected.length) return;
+
+    // Ambil nama barang untuk ditampilkan di konfirmasi
+    const chosenItems = items.filter((item) => selected.includes(item.id_barang));
+    const itemsList = chosenItems.map((item) => `- ${item.nama_barang}`).join("\n");
+
+    if (!confirm(`Hapus ${selected.length} barang berikut?\n\n${itemsList}\n\nAksi ini tidak bisa dibatalkan.`)) return;
+    
+    try {
+      await requestJSON("/api/barang", { method: "DELETE", body: JSON.stringify({ ids: selected }) });
+      setSelected([]);
+      setToast("Barang terpilih berhasil dihapus.");
+      await load();
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "Gagal menghapus barang.");
+    }
+  }
+
+  function openBulkEdit() {
+    const chosen = items.filter((item) => selected.includes(item.id_barang));
+    setBulkRows(
+      chosen.map((item) => ({
+        id_barang: item.id_barang,
+        nama_barang: item.nama_barang,
+        kategori: item.kategori,
+        expired: toDateInput(item.expired),
+        qty_awal: String(item.qty_awal),
+        qty_terkini: String(item.qty_terkini),
+        plu: item.plu ?? "",
+        newImage: null, // Reset state gambar
+      }))
+    );
+    setBulkModal(true);
+  }
+
+  async function saveBulkEdit(e: React.FormEvent) {
+    e.preventDefault();
+    setBulkSaving(true);
+    try {
+      // Kita gunakan FormData agar bisa mengirim kombinasi JSON string dan file (gambar) massal
+      const formData = new FormData();
+      
+      const payloadItems = bulkRows.map((row) => ({
+        id_barang: row.id_barang,
+        nama_barang: row.nama_barang,
+        kategori: row.kategori,
+        expired: row.expired || null,
+        qty_awal: Number(row.qty_awal),
+        qty_terkini: Number(row.qty_terkini),
+        plu: row.plu || null,
+      }));
+
+      formData.append("items", JSON.stringify(payloadItems));
+
+      // Append file individual sesuai id_barang nya (jika ada file yang dipilih)
+      bulkRows.forEach((row) => {
+        if (row.newImage) {
+          formData.append(`image_${row.id_barang}`, row.newImage);
+        }
+      });
+
+      const d = await requestJSON<{ message: string }>("/api/barang/bulk", {
+        method: "POST",
+        body: formData,
+      });
+      
+      setBulkModal(false);
+      setSelected([]);
+      setToast(d.message || "Edit massal berhasil disimpan.");
+      await load();
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "Gagal mengedit massal.");
+    } finally {
+      setBulkSaving(false);
+    }
+  }
+
+  async function renew() {
+    if (!confirm("Arsipkan stok sekarang lalu jadikan stok terkini sebagai stok awal bulan berikutnya?")) return;
+    try {
+      const m = new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date());
+      const data = await requestJSON<{ message: string }>("/api/barang/renew", {
+        method: "POST",
+        body: JSON.stringify({ bulan: m }),
+      });
+      setToast(data.message);
+      await load();
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "Rollover gagal.");
+    }
+  }
+
+  const title = habis ? "Stok Habis / MD" : "Daftar Barang";
+
+  return (
+    <DashboardShell>
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">Inventori & kontrol stok</div>
+          <h1>{title}</h1>
+          <p>
+            {habis
+              ? "Pantau barang yang stoknya sudah habis agar kebutuhan distribusi tidak terlewat."
+              : "Kelola stok barang marketing, masa kedaluwarsa, PLU, dan histori rollover bulanan."}
+          </p>
+        </div>
+        <div className="heading-actions">
+          {!habis && admin && (
+            <>
+              <button className="btn" onClick={renew}>
+                <RefreshCw size={16} /> Renew Bulanan
+              </button>
+              <button className="btn btn-primary" onClick={openAdd}>
+                <Plus size={16} /> Tambah Barang
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {toast && (
+        <div
+          className={`toast ${
+            toast.toLowerCase().includes("gagal") ||
+            toast.toLowerCase().includes("tidak bisa") ||
+            toast.toLowerCase().includes("belum")
+              ? "error"
+              : ""
+          }`}
+        >
+          {toast}
+          <button className="float-right" onClick={() => setToast("")}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      <div className="stat-grid">
+        <div className="stat-card">
+          <div className="stat-top">
+            Jenis barang <span className="stat-icon"><Boxes /></span>
+          </div>
+          <div className="stat-value">{items.length}</div>
+          <div className="stat-note">Data yang cocok dengan tampilan ini</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-top">
+            Total stok tersedia <span className="stat-icon"><Package /></span>
+          </div>
+          <div className="stat-value">{totalQty.toLocaleString("id-ID")}</div>
+          <div className="stat-note">Akumulasi qty terkini</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-top">
+            Mendekati expired <span className="stat-icon"><CalendarClock /></span>
+          </div>
+          <div className="stat-value">
+            {items.filter((i) => {
+              if (!i.expired) return false;
+              const delta = (new Date(i.expired).getTime() - Date.now()) / 86400000;
+              return delta >= 0 && delta <= 90;
+            }).length}
+          </div>
+          <div className="stat-note">Dalam rentang 90 hari</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-top">
+            Kategori aktif <span className="stat-icon"><Archive /></span>
+          </div>
+          <div className="stat-value">{new Set(items.map((i) => i.kategori)).size}</div>
+          <div className="stat-note">Kategori pada daftar aktif</div>
+        </div>
+      </div>
+
+      {/* Toolbar - Dibuat flex-wrap agar responsive */}
+      <div className="toolbar flex flex-wrap items-center gap-3">
+        <label className="search-wrap flex-1 min-w-[200px]">
+          <Search size={16} />
+          <input
+            placeholder="Cari nama, ID barang, atau PLU…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <select
+          className="select-field"
+          style={{ width: "auto", minWidth: 170 }}
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          <option value="">Semua kategori</option>
+          {categories.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+        
+        {/* Tombol Aksi Massal hanya muncul di mode Desktop (md:flex) */}
+        {admin && !habis && selected.length > 0 && (
+          <div className="hidden md:flex gap-2">
+            <button className="btn" onClick={openBulkEdit}>
+              <Pencil size={15} /> Edit Massal ({selected.length})
+            </button>
+            <button className="btn btn-danger" onClick={deleteSelected}>
+              <Trash2 size={15} /> Hapus ({selected.length})
+            </button>
+          </div>
+        )}
+        
+        {!habis && (
+          <div className="flex gap-2 w-full md:w-auto">
+            <input
+              type="month"
+              className="field flex-1 md:flex-none"
+              style={{ width: 150 }}
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+            />
+            <a
+              className="btn justify-center"
+              href={`/api/barang/export?bulan=${encodeURIComponent(month)}${category ? `&filter=${encodeURIComponent(category.toLowerCase())}` : ""}`}
+            >
+              <Download size={16} /> Export
+            </a>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div className="toast error">
+          {error}{" "}
+          <button className="underline" onClick={load}>
+            Coba lagi
+          </button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="panel">
+          <div className="empty-state">Memuat data barang…</div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="panel">
+          <div className="empty-state">
+            <Package size={32} />
+            <div className="empty-title">Tidak ada barang ditemukan</div>
+            <div>Coba ubah kata kunci atau filter kategori.</div>
+          </div>
+        </div>
+      ) : (
+        <div className="product-grid pb-16 md:pb-0"> {/* Tambah padding bawah khusus di mobile agar tidak terhalang bottom nav */}
+          {filtered.map((item) => (
+            <article className="product-card" key={item.id_barang}>
+              {admin && !habis && (
+                <input
+                  className="product-check"
+                  type="checkbox"
+                  aria-label={`Pilih ${item.nama_barang}`}
+                  checked={selected.includes(item.id_barang)}
+                  onChange={(e) =>
+                    setSelected((s) =>
+                      e.target.checked ? [...s, item.id_barang] : s.filter((id) => id !== item.id_barang)
+                    )
+                  }
+                />
+              )}
+              <div className="product-image">
+                {item.gambar ? (
+                  <img
+                    src={`/image/${encodeURIComponent(item.gambar)}`}
+                    alt={item.nama_barang}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="image-placeholder">
+                    <Package />
+                  </div>
+                )}
+              </div>
+              <div className="product-content">
+                <div className="product-id">
+                  {item.id_barang} · {item.kategori}
+                </div>
+                <div className="product-title">{item.nama_barang}</div>
+                <span
+                  className={`badge ${
+                    Number(item.qty_terkini) <= 0
+                      ? "badge-red"
+                      : Number(item.qty_terkini) <= 5
+                      ? "badge-yellow"
+                      : "badge-green"
+                  }`}
+                >
+                  Stok {Number(item.qty_terkini).toLocaleString("id-ID")}
+                </span>
+                <div className="product-expired">
+                  Expired: {shortDate(item.expired)} · Bulan: {item.bulan || "-"}
+                </div>
+                <div className="product-meta">
+                  <span className="product-qty">
+                    Awal {item.qty_awal} · Alokasi {item.teralokasi}
+                  </span>
+                  {admin && !habis && (
+                    <button className="btn btn-sm" onClick={() => openEdit(item)} title="Edit barang">
+                      <Pencil size={13} /> Edit
+                    </button>
+                  )}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {/* MODAL BOTTOM NAVBAR UNTUK MOBILE - Akan melayang dari bawah saat item dicentang di HP */}
+      {admin && !habis && selected.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 flex justify-between items-center z-50 md:hidden shadow-[0_-8px_15px_-3px_rgba(0,0,0,0.1)]">
+          <div className="text-sm font-semibold text-indigo-700">
+            {selected.length} Terpilih
+          </div>
+          <div className="flex gap-2">
+            <button className="btn btn-sm shadow-sm" onClick={openBulkEdit}>
+              <Pencil size={14} /> Edit
+            </button>
+            <button className="btn btn-sm btn-danger shadow-sm" onClick={deleteSelected}>
+              <Trash2 size={14} /> Hapus
+            </button>
+            <button className="btn btn-sm text-slate-500 hover:bg-slate-100" onClick={() => setSelected([])}>
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL SINGLE ADD/EDIT (Tetap sama) */}
+      {modal && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setModal(false);
+          }}
+        >
+          <form className="modal" onSubmit={save}>
+            <div className="modal-head">
+              <h3>{editing ? "Edit Barang" : "Tambah Barang"}</h3>
+              <button type="button" className="btn btn-sm" onClick={() => setModal(false)}>
+                <X />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Nama barang</label>
+                <input
+                  className="field"
+                  value={form.nama_barang}
+                  onChange={(e) => setForm({ ...form, nama_barang: e.target.value })}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Kategori</label>
+                  <select
+                    className="select-field"
+                    value={form.kategori}
+                    onChange={(e) => setForm({ ...form, kategori: e.target.value })}
+                  >
+                    {categories.map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Stok awal</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="field"
+                    value={form.qty_awal}
+                    onChange={(e) => setForm({ ...form, qty_awal: e.target.value })}
+                    required
+                  />
+                </div>
+                {editing && (
+                  <div className="form-group">
+                    <label className="form-label">Stok terkini</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="field"
+                      value={form.qty_terkini}
+                      onChange={(e) => setForm({ ...form, qty_terkini: e.target.value })}
+                      required
+                    />
+                  </div>
+                )}
+                <div className="form-group">
+                  <label className="form-label">Tanggal expired</label>
+                  <input
+                    type="date"
+                    className="field"
+                    value={form.expired}
+                    onChange={(e) => setForm({ ...form, expired: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">PLU</label>
+                  <input
+                    className="field"
+                    value={form.plu}
+                    onChange={(e) => setForm({ ...form, plu: e.target.value })}
+                    placeholder="Opsional"
+                  />
+                </div>
+              </div>
+              {!editing && (
+                <div className="form-group">
+                  <label className="form-label">Foto barang (maksimal 5 MB)</label>
+                  <label className="btn w-full">
+                    <ImagePlus size={16} /> {image ? image.name : "Pilih gambar"}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+            <div className="modal-foot">
+              <button type="button" className="btn" onClick={() => setModal(false)}>
+                Batal
+              </button>
+              <button className="btn btn-primary" disabled={saving}>
+                {saving ? "Menyimpan…" : editing ? "Simpan Perubahan" : "Tambah Barang"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL BULK EDIT (Ditambahkan kolom Upload Foto per baris) */}
+      {bulkModal && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setBulkModal(false);
+          }}
+        >
+          <form className="modal" style={{ width: "min(100%, 1200px)" }} onSubmit={saveBulkEdit}>
+            <div className="modal-head">
+              <div>
+                <h3>Edit Massal Barang</h3>
+                <div className="panel-subtitle">
+                  Periksa setiap baris. Isi foto baru jika ingin mengganti gambar. Qty terkini akan menjadi stok aktual.
+                </div>
+              </div>
+              <button type="button" className="btn btn-sm" onClick={() => setBulkModal(false)}>
+                <X />
+              </button>
+            </div>
+            <div className="modal-body p-0">
+              {/* Tambahan overflow-x-auto agar tabel tetap responsif dan bisa di-scroll secara horizontal */}
+              <div className="table-wrap overflow-x-auto w-full border-0">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nama</th>
+                      <th>Foto Baru (Opsional)</th>
+                      <th>Kategori</th>
+                      <th>Expired</th>
+                      <th>Stok awal</th>
+                      <th>Stok kini</th>
+                      <th>PLU</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bulkRows.map((row, index) => (
+                      <tr key={row.id_barang}>
+                        <td>
+                          <span className="badge">{row.id_barang}</span>
+                        </td>
+                        <td>
+                          <input
+                            className="field"
+                            style={{ minWidth: 170 }}
+                            value={row.nama_barang}
+                            onChange={(e) =>
+                              setBulkRows((old) =>
+                                old.map((v, i) => (i === index ? { ...v, nama_barang: e.target.value } : v))
+                              )
+                            }
+                            required
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="field file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                            style={{ minWidth: 200, padding: "4px 8px", fontSize: 12 }}
+                            onChange={(e) =>
+                              setBulkRows((old) =>
+                                old.map((v, i) => (i === index ? { ...v, newImage: e.target.files?.[0] ?? null } : v))
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <select
+                            className="select-field"
+                            style={{ minWidth: 145 }}
+                            value={row.kategori}
+                            onChange={(e) =>
+                              setBulkRows((old) =>
+                                old.map((v, i) => (i === index ? { ...v, kategori: e.target.value } : v))
+                              )
+                            }
+                          >
+                            {categories.map((c) => (
+                              <option key={c}>{c}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="date"
+                            className="field"
+                            style={{ minWidth: 140 }}
+                            value={row.expired}
+                            onChange={(e) =>
+                              setBulkRows((old) =>
+                                old.map((v, i) => (i === index ? { ...v, expired: e.target.value } : v))
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            className="field"
+                            style={{ width: 85 }}
+                            value={row.qty_awal}
+                            onChange={(e) =>
+                              setBulkRows((old) =>
+                                old.map((v, i) => (i === index ? { ...v, qty_awal: e.target.value } : v))
+                              )
+                            }
+                            required
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            className="field"
+                            style={{ width: 85 }}
+                            value={row.qty_terkini}
+                            onChange={(e) =>
+                              setBulkRows((old) =>
+                                old.map((v, i) => (i === index ? { ...v, qty_terkini: e.target.value } : v))
+                              )
+                            }
+                            required
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="field"
+                            style={{ minWidth: 100 }}
+                            value={row.plu}
+                            onChange={(e) =>
+                              setBulkRows((old) =>
+                                old.map((v, i) => (i === index ? { ...v, plu: e.target.value } : v))
+                              )
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="modal-foot">
+              <button type="button" className="btn" onClick={() => setBulkModal(false)}>
+                Batal
+              </button>
+              <button className="btn btn-primary" disabled={bulkSaving}>
+                <Save size={14} />
+                {bulkSaving ? "Menyimpan…" : "Simpan Semua Perubahan"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </DashboardShell>
+  );
+}
