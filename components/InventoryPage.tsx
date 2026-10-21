@@ -614,7 +614,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
             if (e.target === e.currentTarget) setBulkModal(false);
           }}
         >
-          <form className="modal" style={{ width: "min(100%, 1200px)" }} onSubmit={saveBulkEdit}>
+          <form className="modal bulk-edit-modal" onSubmit={saveBulkEdit}>
             <div className="modal-head">
               <div>
                 <h3>Edit Massal Barang</h3>
