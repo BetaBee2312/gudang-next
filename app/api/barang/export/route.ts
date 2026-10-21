@@ -89,7 +89,8 @@ export async function GET(request: NextRequest) {
         } catch {
           // Continue export if an old image is missing or cannot be decoded.
         }
-      }    }
+      }
+    }
     ws.autoFilter = { from: "A1", to: `${ws.getColumn(ws.columnCount).letter}${Math.max(1, items.length + 1)}` };
     ws.pageSetup = { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
     ws.headerFooter.oddFooter = `&BGudang Marketing  •  ${String(month).padStart(2, "0")}/${year}  •  Halaman &P dari &N`;
