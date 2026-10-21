@@ -4,6 +4,10 @@ Aplikasi manajemen inventori Gudang Marketing yang dimigrasikan dari PHP ke **Ne
 
 > **Status migrasi:** aplikasi Next.js tersedia di branch `main`. Sebelum menjalankan pada database produksi, cocokkan skema database yang digunakan dengan query di `app/api` dan buat backup terlebih dahulu.
 
+## AI-assisted development
+
+This project is developed by **BetaBee2312** with AI assistance from **ChatGPT by OpenAI** for code review, debugging, implementation support, and documentation. Repository commits are attributed to the GitHub account that publishes them; AI assistance is acknowledged here rather than represented as a GitHub user or commit author.
+
 ## Teknologi
 
 - **Framework:** Next.js 16, React 19, TypeScript
