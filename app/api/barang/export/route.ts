@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     const wb = new ExcelJS.Workbook(); wb.creator = "Gudang Marketing"; wb.created = new Date();
     const ws = wb.addWorksheet(`Alokasi ${String(month).padStart(2, "0")}-${year}`, { views: [{ state: "frozen", ySplit: 1, xSplit: 4 }] });
     const headers = ["No", "PLU", "Gambar", "Nama Barang", "Kategori", "Exp", "Stok Awal", "Stok Akhir", ...branches];
-    ws.addRow(headers); ws.getRow(1).height = 30;
+    ws.addRow(headers); ws.getRow(1).height = 36;
     ws.columns = [
       { width: 5 }, { width: 12 }, { width: 12 }, { width: 30 }, { width: 16 }, { width: 14 }, { width: 10 }, { width: 10 }, ...branches.map(() => ({ width: 14 })),
     ];
@@ -122,9 +122,9 @@ export async function GET(request: NextRequest) {
             const imageId = wb.addImage({ buffer: compressed, extension: "jpeg" });
             // Fixed thumbnail inside column C. oneCell anchoring makes it move with its row when rows are deleted.
             ws.addImage(imageId, {
-              tl: { col: 2.1, row: row.number - 0.94 },
-              ext: { width: 62, height: 42 },
-              editAs: "oneCell",
+              tl: { col: 2.12, row: row.number - 0.9 },
+              br: { col: 2.88, row: row.number - 0.1 },
+              editAs: "twoCell",
             });
           }
         } catch {
