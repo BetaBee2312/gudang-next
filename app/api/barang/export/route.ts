@@ -12,15 +12,30 @@ const mdCategories = ["md", "md-d53", "md-dgbg"];
 
 function parseExcelDate(value: unknown): Date | "" {
   if (!value) return "";
-  if (value instanceof Date) return Number.isNaN(value.getTime()) ? "" : value;
-  const raw = String(value).trim();
-  const iso = raw.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);
-  if (iso) {
-    const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
-    return Number.isNaN(date.getTime()) ? "" : date;
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return "";
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
   }
-  const parsed = new Date(raw);
-  return Number.isNaN(parsed.getTime()) ? "" : parsed;
+
+  const raw = String(value).trim();
+  const isoDate = raw.slice(0, 10);
+  const parts = isoDate.split("-").map(Number);
+  if (
+    parts.length === 3 &&
+    isoDate.length === 10 &&
+    parts.every(Number.isInteger) &&
+    parts[0] >= 1900 &&
+    parts[1] >= 1 && parts[1] <= 12 &&
+    parts[2] >= 1 && parts[2] <= 31
+  ) {
+    const parsed = new Date(parts[0], parts[1] - 1, parts[2]);
+    if (parsed.getFullYear() === parts[0] && parsed.getMonth() === parts[1] - 1 && parsed.getDate() === parts[2]) {
+      return parsed;
+    }
+  }
+
+  const fallback = new Date(raw);
+  return Number.isNaN(fallback.getTime()) ? "" : fallback;
 }
 
 export async function GET(request: NextRequest) {
@@ -61,7 +76,7 @@ export async function GET(request: NextRequest) {
     const headers = ["No", "PLU", "Gambar", "Nama Barang", "Kategori", "Exp", "Stok Awal", "Stok Akhir", ...branches];
     ws.addRow(headers); ws.getRow(1).height = 30;
     ws.columns = [
-      { width: 7 }, { width: 15 }, { width: 12 }, { width: 34 }, { width: 19 }, { width: 16 }, { width: 12 }, { width: 12 }, ...branches.map(() => ({ width: 17 })),
+      { width: 5 }, { width: 12 }, { width: 12 }, { width: 30 }, { width: 16 }, { width: 14 }, { width: 10 }, { width: 10 }, ...branches.map(() => ({ width: 14 })),
     ];
     ws.getRow(1).eachCell(cell => { cell.font = { bold: true, color: { argb: "FFFFFFFF" } }; cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF183C34" } }; cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true }; cell.border = { bottom: { style: "medium", color: { argb: "FFD8F26B" } } }; });
     for (let index = 0; index < items.length; index++) {
@@ -82,7 +97,7 @@ export async function GET(request: NextRequest) {
       });
       if (item.gambar) {
         try {
-          const filename = path.basename(String(item.gambar).replace(/\\\\/g, "/"));
+          const filename = path.basename(String(item.gambar));
           const imagePaths = [
             path.join(process.cwd(), "public", "gambar", filename),
             path.join(process.cwd(), "public", filename),
