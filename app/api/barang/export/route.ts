@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     for (let index = 0; index < items.length; index++) {
       const item = items[index];
       const row = ws.addRow([
-        index + 1, item.plu ?? "", "", item.nama_barang, item.kategori,
+        index + 1, (item.plu == null || String(item.plu).trim() === "" || Number(item.plu) === 0) ? "" : item.plu, "", item.nama_barang, item.kategori,
         parseExcelDate(item.expired),
         Number(item.qty_awal ?? 0), Number(item.qty_terkini ?? 0),
         ...branches.map(branch => { const value = allocationMap.get(`${String(item.id_barang)}\u0000${branch}`) ?? 0; return value > 0 ? value : ""; }),
