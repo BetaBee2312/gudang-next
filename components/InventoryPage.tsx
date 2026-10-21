@@ -299,43 +299,6 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         </div>
       )}
 
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-top">
-            Jenis barang <span className="stat-icon"><Boxes /></span>
-          </div>
-          <div className="stat-value">{items.length}</div>
-          <div className="stat-note">Data yang cocok dengan tampilan ini</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-top">
-            Total stok tersedia <span className="stat-icon"><Package /></span>
-          </div>
-          <div className="stat-value">{totalQty.toLocaleString("id-ID")}</div>
-          <div className="stat-note">Akumulasi qty terkini</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-top">
-            Mendekati expired <span className="stat-icon"><CalendarClock /></span>
-          </div>
-          <div className="stat-value">
-            {items.filter((i) => {
-              if (!i.expired) return false;
-              const delta = (new Date(i.expired).getTime() - Date.now()) / 86400000;
-              return delta >= 0 && delta <= 90;
-            }).length}
-          </div>
-          <div className="stat-note">Dalam rentang 90 hari</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-top">
-            Kategori aktif <span className="stat-icon"><Archive /></span>
-          </div>
-          <div className="stat-value">{new Set(items.map((i) => i.kategori)).size}</div>
-          <div className="stat-note">Kategori pada daftar aktif</div>
-        </div>
-      </div>
-
       {/* Toolbar - Dibuat flex-wrap agar responsive */}
       <div className="toolbar flex flex-wrap items-center gap-3">
         <label className="search-wrap flex-1 min-w-[200px]">
