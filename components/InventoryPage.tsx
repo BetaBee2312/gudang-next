@@ -626,129 +626,41 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
                 <X />
               </button>
             </div>
-            <div className="modal-body p-0">
-              {/* Tambahan overflow-x-auto agar tabel tetap responsif dan bisa di-scroll secara horizontal */}
-              <div className="table-wrap overflow-x-auto w-full border-0">
+            <div className="modal-body bulk-edit-body p-0">
+              <div className="bulk-edit-desktop table-wrap overflow-x-auto w-full border-0">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Nama</th>
-                      <th>Foto Baru (Opsional)</th>
-                      <th>Kategori</th>
-                      <th>Expired</th>
-                      <th>Stok awal</th>
-                      <th>Stok kini</th>
-                      <th>PLU</th>
-                    </tr>
-                  </thead>
+                  <thead><tr><th>ID</th><th>Nama</th><th>Foto Baru</th><th>Kategori</th><th>Expired</th><th>Stok awal</th><th>Stok kini</th><th>PLU</th></tr></thead>
                   <tbody>
                     {bulkRows.map((row, index) => (
                       <tr key={row.id_barang}>
-                        <td>
-                          <span className="badge">{row.id_barang}</span>
-                        </td>
-                        <td>
-                          <input
-                            className="field"
-                            style={{ minWidth: 170 }}
-                            value={row.nama_barang}
-                            onChange={(e) =>
-                              setBulkRows((old) =>
-                                old.map((v, i) => (i === index ? { ...v, nama_barang: e.target.value } : v))
-                              )
-                            }
-                            required
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            className="field file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
-                            style={{ minWidth: 200, padding: "4px 8px", fontSize: 12 }}
-                            onChange={(e) =>
-                              setBulkRows((old) =>
-                                old.map((v, i) => (i === index ? { ...v, newImage: e.target.files?.[0] ?? null } : v))
-                              )
-                            }
-                          />
-                        </td>
-                        <td>
-                          <select
-                            className="select-field"
-                            style={{ minWidth: 145 }}
-                            value={row.kategori}
-                            onChange={(e) =>
-                              setBulkRows((old) =>
-                                old.map((v, i) => (i === index ? { ...v, kategori: e.target.value } : v))
-                              )
-                            }
-                          >
-                            {categories.map((c) => (
-                              <option key={c}>{c}</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>
-                          <input
-                            type="date"
-                            className="field"
-                            style={{ minWidth: 140 }}
-                            value={row.expired}
-                            onChange={(e) =>
-                              setBulkRows((old) =>
-                                old.map((v, i) => (i === index ? { ...v, expired: e.target.value } : v))
-                              )
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            className="field"
-                            style={{ width: 85 }}
-                            value={row.qty_awal}
-                            onChange={(e) =>
-                              setBulkRows((old) =>
-                                old.map((v, i) => (i === index ? { ...v, qty_awal: e.target.value } : v))
-                              )
-                            }
-                            required
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            className="field"
-                            style={{ width: 85 }}
-                            value={row.qty_terkini}
-                            onChange={(e) =>
-                              setBulkRows((old) =>
-                                old.map((v, i) => (i === index ? { ...v, qty_terkini: e.target.value } : v))
-                              )
-                            }
-                            required
-                          />
-                        </td>
-                        <td>
-                          <input
-                            className="field"
-                            style={{ minWidth: 100 }}
-                            value={row.plu}
-                            onChange={(e) =>
-                              setBulkRows((old) =>
-                                old.map((v, i) => (i === index ? { ...v, plu: e.target.value } : v))
-                              )
-                            }
-                          />
-                        </td>
+                        <td><span className="badge">{row.id_barang}</span></td>
+                        <td><input className="field" style={{ minWidth: 170 }} value={row.nama_barang} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, nama_barang: e.target.value } : v))} required /></td>
+                        <td><input type="file" accept="image/jpeg,image/png,image/webp" className="field" style={{ minWidth: 190, padding: "4px 8px", fontSize: 12 }} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, newImage: e.target.files?.[0] ?? null } : v))} /></td>
+                        <td><select className="select-field" style={{ minWidth: 145 }} value={row.kategori} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, kategori: e.target.value } : v))}>{categories.map((cat) => <option key={cat}>{cat}</option>)}</select></td>
+                        <td><input type="date" className="field" style={{ minWidth: 140 }} value={row.expired} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, expired: e.target.value } : v))} /></td>
+                        <td><input type="number" min="0" className="field" style={{ width: 85 }} value={row.qty_awal} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, qty_awal: e.target.value } : v))} required /></td>
+                        <td><input type="number" min="0" className="field" style={{ width: 85 }} value={row.qty_terkini} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, qty_terkini: e.target.value } : v))} required /></td>
+                        <td><input className="field" style={{ minWidth: 100 }} value={row.plu} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, plu: e.target.value } : v))} /></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="bulk-edit-mobile">
+                {bulkRows.map((row, index) => (
+                  <section className="bulk-item-card" key={row.id_barang}>
+                    <div className="bulk-item-heading"><span className="badge">{row.id_barang}</span><span className="bulk-item-number">Barang {index + 1} dari {bulkRows.length}</span></div>
+                    <div className="form-group"><label className="form-label">Nama barang</label><input className="field" value={row.nama_barang} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, nama_barang: e.target.value } : v))} required /></div>
+                    <div className="form-group"><label className="form-label">Foto baru (opsional)</label><input type="file" accept="image/jpeg,image/png,image/webp" className="field bulk-image-input" onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, newImage: e.target.files?.[0] ?? null } : v))} />{row.newImage && <div className="bulk-file-name">{row.newImage.name}</div>}</div>
+                    <div className="bulk-item-grid">
+                      <div className="form-group"><label className="form-label">Kategori</label><select className="select-field" value={row.kategori} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, kategori: e.target.value } : v))}>{categories.map((cat) => <option key={cat}>{cat}</option>)}</select></div>
+                      <div className="form-group"><label className="form-label">Tanggal expired</label><input type="date" className="field" value={row.expired} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, expired: e.target.value } : v))} /></div>
+                      <div className="form-group"><label className="form-label">Stok awal</label><input type="number" min="0" className="field" value={row.qty_awal} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, qty_awal: e.target.value } : v))} required /></div>
+                      <div className="form-group"><label className="form-label">Stok terkini</label><input type="number" min="0" className="field" value={row.qty_terkini} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, qty_terkini: e.target.value } : v))} required /></div>
+                      <div className="form-group bulk-plu-field"><label className="form-label">PLU</label><input className="field" value={row.plu} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, plu: e.target.value } : v))} /></div>
+                    </div>
+                  </section>
+                ))}
               </div>
             </div>
             <div className="modal-foot">
