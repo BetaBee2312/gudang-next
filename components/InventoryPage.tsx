@@ -462,9 +462,6 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
                   Expired: {shortDate(item.expired)} · Bulan: {item.bulan || "-"}
                 </div>
                 <div className="product-meta">
-                  <span className="product-qty">
-                    Awal {item.qty_awal} · Alokasi {item.teralokasi}
-                  </span>
                   {admin && !habis && (
                     <button className="btn btn-sm" onClick={() => openEdit(item)} title="Edit barang">
                       <Pencil size={13} /> Edit
