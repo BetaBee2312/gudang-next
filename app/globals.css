@@ -117,3 +117,14 @@
   .bulk-edit-modal .bulk-item-card{padding:12px!important}
   .bulk-edit-modal .bulk-item-heading{padding-bottom:9px;margin-bottom:10px}
 }
+
+
+/* Separate expiry and stock-update metadata, with clear expiry severity */
+.product-expiry-row{display:flex;align-items:center;min-width:0;margin-top:9px}
+.expiry-status{display:inline-flex;align-items:center;gap:6px;max-width:100%;font-size:10px;line-height:1.35;font-weight:700;padding:5px 8px;border-radius:999px;overflow-wrap:anywhere}
+.expiry-dot{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:currentColor}
+.expiry-expired{color:#b42318;background:#fee4e2}
+.expiry-soon{color:#b54708;background:#ffefc2}
+.expiry-safe{color:#187443;background:#dcfce7}
+.expiry-unknown{color:#66756d;background:#edf2ee}
+.product-month{margin-top:5px!important;font-size:10px;color:#849188}
