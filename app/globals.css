@@ -101,3 +101,19 @@
 @media(max-width:370px){
   .bulk-edit-modal .modal-foot .btn-primary{white-space:normal;line-height:1.2}
 }
+
+
+/* Stronger visual separation between bulk-edit item cards */
+.bulk-edit-modal .bulk-edit-cards{gap:14px!important;padding:14px!important;background:#f3f7f4}
+.bulk-edit-modal .bulk-item-card{
+  background:#fff!important;
+  border:1px solid #cbdad1!important;
+  border-radius:14px!important;
+  box-shadow:0 3px 10px rgba(20,55,42,.08),0 0 0 1px rgba(20,55,42,.025);
+}
+.bulk-edit-modal .bulk-item-heading{border-bottom:1px solid #dce7e0!important}
+@media(max-width:850px){
+  .bulk-edit-modal .bulk-edit-cards{gap:12px!important;padding:10px!important}
+  .bulk-edit-modal .bulk-item-card{padding:12px!important}
+  .bulk-edit-modal .bulk-item-heading{padding-bottom:9px;margin-bottom:10px}
+}
