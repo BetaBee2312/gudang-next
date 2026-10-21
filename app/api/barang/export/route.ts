@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import sharp from "sharp";
 import { db, type DBRow } from "@/lib/db";
 import { requireUser, isResponse, fail } from "@/lib/http";
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     const headers = ["No", "PLU", "Gambar", "Nama Barang", "Kategori", "Exp", "Stok Awal", "Stok Akhir", ...branches];
     ws.addRow(headers); ws.getRow(1).height = 30;
     ws.columns = [
-      { width: 7 }, { width: 15 }, { width: 14 }, { width: 34 }, { width: 19 }, { width: 16 }, { width: 12 }, { width: 12 }, ...branches.map(() => ({ width: 17 })),
+      { width: 7 }, { width: 15 }, { width: 12 }, { width: 34 }, { width: 19 }, { width: 16 }, { width: 12 }, { width: 12 }, ...branches.map(() => ({ width: 17 })),
     ];
     ws.getRow(1).eachCell(cell => { cell.font = { bold: true, color: { argb: "FFFFFFFF" } }; cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF183C34" } }; cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true }; cell.border = { bottom: { style: "medium", color: { argb: "FFD8F26B" } } }; });
     for (let index = 0; index < items.length; index++) {
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
         Number(item.qty_awal ?? 0), Number(item.qty_terkini ?? 0),
         ...branches.map(branch => { const value = allocationMap.get(`${String(item.id_barang)}\u0000${branch}`) ?? 0; return value > 0 ? value : ""; }),
       ]);
-      row.height = 57; row.alignment = { vertical: "middle", wrapText: true };
+      row.height = 48; row.alignment = { vertical: "middle", wrapText: true };
       row.eachCell((cell, col) => {
         if (row.number % 2 === 0) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F8F5" } };
         if (col === 1 || col === 7 || col === 8 || col >= 9) cell.alignment = { horizontal: "center", vertical: "middle" };
@@ -69,15 +70,26 @@ export async function GET(request: NextRequest) {
       if (item.gambar) {
         try {
           const imagePath = path.join(process.cwd(), "public", "gambar", path.basename(String(item.gambar)));
-          const bytes = await readFile(imagePath);
-          const fileExt = path.extname(imagePath).toLowerCase();
-          if (fileExt === ".webp") throw new Error("ExcelJS tidak menyematkan gambar WebP secara native.");
-          const ext = fileExt === ".png" ? "png" : "jpeg";
-          const imageId = wb.addImage({ buffer: bytes, extension: ext });
-          ws.addImage(imageId, { tl: { col: 2, row: row.number - 1 }, ext: { width: 62, height: 50 } });
-        } catch { /* Ekspor tetap berjalan jika file gambar lama hilang. */ }
-      }
-    }
+          const source = await readFile(imagePath);
+          // Workbook uses lightweight thumbnails instead of embedding original full-resolution photos.
+          const compressed = await sharp(source, { limitInputPixels: 40_000_000 })
+            .rotate()
+            .flatten({ background: "#FFFFFF" })
+            .resize({ width: 180, height: 140, fit: "inside", withoutEnlargement: true })
+            .jpeg({ quality: 35, mozjpeg: true, progressive: true, chromaSubsampling: "4:2:0" })
+            .toBuffer();
+
+          const imageId = wb.addImage({ buffer: compressed, extension: "jpeg" });
+          // Anchor the image to column C and the item's row; twoCell makes it move/resize with cells in Excel.
+          ws.addImage(imageId, {
+            tl: { col: 2, row: row.number - 1 },
+            br: { col: 3, row: row.number },
+            editAs: "twoCell",
+          });
+        } catch {
+          // Continue export if an old image is missing or cannot be decoded.
+        }
+      }    }
     ws.autoFilter = { from: "A1", to: `${ws.getColumn(ws.columnCount).letter}${Math.max(1, items.length + 1)}` };
     ws.pageSetup = { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
     ws.headerFooter.oddFooter = `&BGudang Marketing  •  ${String(month).padStart(2, "0")}/${year}  •  Halaman &P dari &N`;
