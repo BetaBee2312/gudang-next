@@ -10,6 +10,19 @@ export const runtime = "nodejs";
 const allowedCategories = ["marketing", "md", "marketing-d53", "md-d53", "marketing-dgbg", "md-dgbg"];
 const mdCategories = ["md", "md-d53", "md-dgbg"];
 
+function parseExcelDate(value: unknown): Date | "" {
+  if (!value) return "";
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? "" : value;
+  const raw = String(value).trim();
+  const iso = raw.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);
+  if (iso) {
+    const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    return Number.isNaN(date.getTime()) ? "" : date;
+  }
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed;
+}
+
 export async function GET(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
@@ -55,11 +68,11 @@ export async function GET(request: NextRequest) {
       const item = items[index];
       const row = ws.addRow([
         index + 1, item.plu ?? "", "", item.nama_barang, item.kategori,
-        item.expired ? new Date(`${String(item.expired).slice(0, 10)}T00:00:00`) : "",
+        parseExcelDate(item.expired),
         Number(item.qty_awal ?? 0), Number(item.qty_terkini ?? 0),
         ...branches.map(branch => { const value = allocationMap.get(`${String(item.id_barang)}\u0000${branch}`) ?? 0; return value > 0 ? value : ""; }),
       ]);
-      row.height = 48; row.alignment = { vertical: "middle", wrapText: true };
+      row.height = 38; row.alignment = { vertical: "middle", wrapText: true };
       row.eachCell((cell, col) => {
         if (row.number % 2 === 0) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F8F5" } };
         if (col === 1 || col === 7 || col === 8 || col >= 9) cell.alignment = { horizontal: "center", vertical: "middle" };
@@ -69,23 +82,36 @@ export async function GET(request: NextRequest) {
       });
       if (item.gambar) {
         try {
-          const imagePath = path.join(process.cwd(), "public", "gambar", path.basename(String(item.gambar)));
-          const source = await readFile(imagePath);
-          // Workbook uses lightweight thumbnails instead of embedding original full-resolution photos.
-          const compressed = await sharp(source, { limitInputPixels: 40_000_000 })
-            .rotate()
-            .flatten({ background: "#FFFFFF" })
-            .resize({ width: 180, height: 140, fit: "inside", withoutEnlargement: true })
-            .jpeg({ quality: 35, mozjpeg: true, progressive: true, chromaSubsampling: "4:2:0" })
-            .toBuffer();
+          const filename = path.basename(String(item.gambar).replace(/\\\\/g, "/"));
+          const imagePaths = [
+            path.join(process.cwd(), "public", "gambar", filename),
+            path.join(process.cwd(), "public", filename),
+          ];
+          let source: Buffer | undefined;
+          for (const imagePath of imagePaths) {
+            try {
+              source = await readFile(imagePath);
+              break;
+            } catch {
+              // Try the next supported legacy upload location.
+            }
+          }
+          if (source) {
+            const compressed = await sharp(source, { limitInputPixels: 40_000_000 })
+              .rotate()
+              .flatten({ background: "#FFFFFF" })
+              .resize({ width: 150, height: 100, fit: "inside", withoutEnlargement: true })
+              .jpeg({ quality: 32, mozjpeg: true, progressive: true, chromaSubsampling: "4:2:0" })
+              .toBuffer();
 
-          const imageId = wb.addImage({ buffer: compressed, extension: "jpeg" });
-          // Anchor the image to column C and the item's row; twoCell makes it move/resize with cells in Excel.
-          ws.addImage(imageId, {
-            tl: { col: 2, row: row.number - 1 },
-            br: { col: 3, row: row.number },
-            editAs: "twoCell",
-          });
+            const imageId = wb.addImage({ buffer: compressed, extension: "jpeg" });
+            // Fixed thumbnail inside column C. oneCell anchoring makes it move with its row when rows are deleted.
+            ws.addImage(imageId, {
+              tl: { col: 2.1, row: row.number - 0.94 },
+              ext: { width: 62, height: 42 },
+              editAs: "oneCell",
+            });
+          }
         } catch {
           // Continue export if an old image is missing or cannot be decoded.
         }
