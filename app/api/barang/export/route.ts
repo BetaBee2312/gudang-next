@@ -78,7 +78,17 @@ export async function GET(request: NextRequest) {
     ws.columns = [
       { width: 5 }, { width: 12 }, { width: 12 }, { width: 30 }, { width: 16 }, { width: 14 }, { width: 10 }, { width: 10 }, ...branches.map(() => ({ width: 14 })),
     ];
-    ws.getRow(1).eachCell(cell => { cell.font = { bold: true, color: { argb: "FFFFFFFF" } }; cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF183C34" } }; cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true }; cell.border = { bottom: { style: "medium", color: { argb: "FFD8F26B" } } }; });
+    ws.getRow(1).eachCell(cell => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF183C34" } };
+      cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      cell.border = {
+        top: { style: "thin", color: { argb: "FF0F2F29" } },
+        left: { style: "thin", color: { argb: "FF54776D" } },
+        bottom: { style: "medium", color: { argb: "FFD8F26B" } },
+        right: { style: "thin", color: { argb: "FF54776D" } },
+      };
+    });
     for (let index = 0; index < items.length; index++) {
       const item = items[index];
       const row = ws.addRow([
@@ -93,7 +103,12 @@ export async function GET(request: NextRequest) {
         if (col === 1 || col === 7 || col === 8 || col >= 9) cell.alignment = { horizontal: "center", vertical: "middle" };
         if (col === 6 && cell.value instanceof Date) cell.numFmt = "dd mmm yyyy";
         if (col >= 9) cell.numFmt = "#,##0";
-        cell.border = { bottom: { style: "hair", color: { argb: "FFE5EBE6" } } };
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFD7E0DA" } },
+          left: { style: "thin", color: { argb: "FFD7E0DA" } },
+          bottom: { style: "thin", color: { argb: "FFD7E0DA" } },
+          right: { style: "thin", color: { argb: "FFD7E0DA" } },
+        };
       });
       if (item.gambar) {
         try {
