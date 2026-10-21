@@ -47,6 +47,22 @@ type BulkRow = {
 const categories = ["Marketing", "MD", "Marketing-D53", "MD-D53", "Marketing-DGBG", "MD-DGBG"];
 const emptyForm = { nama_barang: "", kategori: "Marketing", expired: "", qty_awal: "0", qty_terkini: "0", plu: "" };
 
+function expiryStatus(value?: string | null): "expired" | "soon" | "safe" | "unknown" {
+  if (!value) return "unknown";
+  const raw = String(value).slice(0, 10);
+  const parts = raw.split("-").map(Number);
+  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part) || part <= 0)) return "unknown";
+  const expiry = new Date(parts[0], parts[1] - 1, parts[2]);
+  if (Number.isNaN(expiry.getTime())) return "unknown";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.ceil((expiry.getTime() - today.getTime()) / 86400000);
+  if (days < 0) return "expired";
+  if (days <= 90) return "soon";
+  return "safe";
+}
+
+
 export default function InventoryPage({ habis = false }: { habis?: boolean }) {
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -421,9 +437,13 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
                 >
                   Stok {Number(item.qty_terkini).toLocaleString("id-ID")}
                 </span>
-                <div className="product-expired">
-                  Expired: {shortDate(item.expired)} · Bulan: {item.bulan || "-"}
+                <div className="product-expiry-row">
+                  <span className={`expiry-status expiry-${expiryStatus(item.expired)}`}>
+                    <span className="expiry-dot" />
+                    {item.expired ? `Expired: ${shortDate(item.expired)}` : "Expired: belum diatur"}
+                  </span>
                 </div>
+                <div className="product-expired product-month">Update stok: {item.bulan || "-"}</div>
                 <div className="product-meta">
                   {admin && !habis && (
                     <button className="btn btn-sm" onClick={() => openEdit(item)} title="Edit barang">
