@@ -30,3 +30,31 @@
   .bulk-edit-modal .modal-foot .btn-primary{flex:1;white-space:normal;line-height:1.25;text-align:center;padding-inline:10px}
   .bulk-edit-modal .modal-foot .btn[type=button]{flex:0 0 auto}
 }
+
+
+/* Responsive bulk edit: cards on phone, efficient table on desktop */
+.bulk-edit-modal .bulk-edit-desktop{display:block}
+.bulk-edit-modal .bulk-edit-mobile{display:none}
+@media(max-width:850px){
+  .bulk-edit-modal{width:100%;max-width:100%;max-height:calc(100dvh - 20px);border-radius:16px}
+  .bulk-edit-modal .bulk-edit-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  .bulk-edit-modal .bulk-edit-desktop{display:none}
+  .bulk-edit-modal .bulk-edit-mobile{display:flex;flex-direction:column;gap:12px;padding:12px}
+  .bulk-edit-modal .bulk-item-card{min-width:0;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 2px 8px #183c3408}
+  .bulk-edit-modal .bulk-item-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:11px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+  .bulk-edit-modal .bulk-item-number{font-size:10px;color:var(--muted);font-weight:700}
+  .bulk-edit-modal .bulk-item-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px}
+  .bulk-edit-modal .bulk-item-grid .form-group{min-width:0}
+  .bulk-edit-modal .bulk-plu-field{grid-column:1/-1}
+  .bulk-edit-modal .form-group{margin-bottom:11px}
+  .bulk-edit-modal .field,.bulk-edit-modal .select-field{width:100%;min-width:0;max-width:100%;font-size:12px;padding:10px}
+  .bulk-edit-modal .bulk-image-input{font-size:10px;padding:8px}
+  .bulk-edit-modal .bulk-file-name{font-size:10px;overflow-wrap:anywhere;color:var(--muted);margin-top:5px}
+  .bulk-edit-modal .modal-foot{flex:0 0 auto;position:sticky;bottom:0;background:white;padding:12px 14px max(12px,env(safe-area-inset-bottom));box-shadow:0 -5px 15px #183c3408}
+  .bulk-edit-modal .modal-foot .btn{min-height:42px}
+}
+@media(max-width:380px){
+  .bulk-edit-modal .modal-head{padding:13px}
+  .bulk-edit-modal .panel-subtitle{max-width:calc(100vw - 100px);font-size:10px}
+  .bulk-edit-modal .modal-foot .btn-primary{flex:1;white-space:normal;line-height:1.25;text-align:center;padding-inline:9px}
+}
