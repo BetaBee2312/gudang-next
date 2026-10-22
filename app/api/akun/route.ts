@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
+import { mkdir, writeFile, unlink } from "node:fs/promises";
+import path from "node:path";
 import bcrypt from "bcryptjs";
 import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
@@ -39,12 +42,16 @@ export async function PATCH(request: NextRequest) {
     const ownProfile = target === user.no_karyawan;
     const admin = isAdmin(user);
     if (!ownProfile && !admin) return fail("Tidak diizinkan mengubah akun orang lain.", 403);
+    const name = String(b.nama ?? "").trim();
+    if (Object.hasOwn(b, "nama") && !name) return fail("Nama wajib diisi.");
+    if (name.length > 150) return fail("Nama maksimal 150 karakter.");
+    if (Object.hasOwn(b, "no_karyawan") && ownProfile) return fail("Perubahan NIK gunakan formulir profil khusus.");
     const updates: string[] = []; const values: unknown[] = [];
-    if (Object.hasOwn(b, "nama")) { updates.push("nama = ?"); values.push(String(b.nama).trim()); }
+    if (Object.hasOwn(b, "nama")) { updates.push("nama = ?"); values.push(name); }
     if (Object.hasOwn(b, "jabatan") && admin) { updates.push("jabatan = ?"); values.push(String(b.jabatan).trim()); }
     if (Object.hasOwn(b, "division") && admin) { updates.push("division = ?"); values.push(String(b.division).trim()); }
     if (Object.hasOwn(b, "kategori") && admin) { updates.push("kategori = ?"); values.push(String(b.kategori).trim()); }
-    if (Object.hasOwn(b, "profilepic")) { updates.push("profilepic = ?"); values.push(String(b.profilepic ?? "").trim() || null); }
+    if (Object.hasOwn(b, "profilepic") && admin) { updates.push("profilepic = ?"); values.push(String(b.profilepic ?? "").trim() || null); }
     if (b.password) {
       if (String(b.password).length < 6) return fail("Password minimal 6 karakter.");
       updates.push("password = ?"); values.push(await bcrypt.hash(String(b.password), 12));
@@ -52,7 +59,7 @@ export async function PATCH(request: NextRequest) {
     if (!updates.length) return fail("Tidak ada perubahan yang valid.");
     values.push(target);
     await db.execute(`UPDATE tb_akun SET ${updates.join(", ")} WHERE no_karyawan = ?`, values);
-    return NextResponse.json({ success: true, message: "Akun berhasil diperbarui. Login ulang mungkin diperlukan." });
+    return NextResponse.json({ success: true, message: "Akun berhasil diperbarui." });
   } catch (error) { return fail(databaseErrorMessage(error), 500); }
 }
 export async function DELETE(request: NextRequest) {
