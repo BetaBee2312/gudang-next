@@ -249,3 +249,9 @@
   .mobile-nav-scrim.show{display:block;position:fixed;inset:0;background:#101e1b66;z-index:25}
   .brand-user-copy .brand-title{max-width:150px}
 }
+
+/* Inventory card pagination */
+.inventory-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px;padding:14px 2px 4px;border-top:1px solid #e1e6eb}
+.inventory-pagination-controls{display:flex;align-items:center;gap:8px}
+.inventory-page-number{font-size:12px;font-weight:600;color:#64748b;white-space:nowrap}
+@media(max-width:520px){.inventory-pagination{align-items:stretch}.inventory-pagination-controls{width:100%;justify-content:space-between;gap:6px}.inventory-pagination-controls .btn{flex:1;min-height:40px}.inventory-page-number{align-self:center;font-size:11px}}

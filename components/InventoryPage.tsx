@@ -71,6 +71,8 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
   const [selected, setSelected] = useState<string[]>([]);
   const [admin, setAdmin] = useState(false);
 
@@ -115,6 +117,18 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       ),
     [items, query, category]
   );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageItems = useMemo(
+    () => filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filtered, currentPage],
+  );
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, category, habis]);
 
   const totalQty = items.reduce((sum, item) => sum + Number(item.qty_terkini || 0), 0);
 
@@ -391,7 +405,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         </div>
       ) : (
         <div className="product-grid pb-16 md:pb-0"> {/* Tambah padding bawah khusus di mobile agar tidak terhalang bottom nav */}
-          {filtered.map((item) => (
+          {pageItems.map((item) => (
             <article className="product-card" key={item.id_barang}>
               {admin && !habis && (
                 <input
@@ -455,6 +469,16 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
             </article>
           ))}
         </div>
+        {filtered.length > 0 && (
+          <div className="inventory-pagination">
+            <span className="table-muted">Menampilkan {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} dari {filtered.length} barang</span>
+            <div className="inventory-pagination-controls">
+              <button type="button" className="btn btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>Sebelumnya</button>
+              <span className="inventory-page-number">Halaman {currentPage} / {totalPages}</span>
+              <button type="button" className="btn btn-sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>Berikutnya</button>
+            </div>
+          </div>
+        )}
       )}
 
       {/* MODAL BOTTOM NAVBAR UNTUK MOBILE - Akan melayang dari bawah saat item dicentang di HP */}
