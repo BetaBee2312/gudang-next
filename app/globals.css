@@ -222,3 +222,30 @@
   .topbar-sidebar-toggle{display:none}
   .brand-user-copy .brand-title{max-width:150px}
 }
+
+/* Sidebar collapse behavior: desktop hidden by default, mobile remains a drawer */
+.brand{min-width:0;gap:8px}
+.brand-user{display:flex;align-items:center;gap:10px;min-width:0;flex:1;color:inherit;text-decoration:none}
+.brand-user-copy{min-width:0;overflow:hidden}
+.brand-user-copy .brand-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:155px}
+.brand-user-copy .brand-sub{font-size:9px;letter-spacing:.08em;white-space:nowrap}
+.brand-avatar{border-radius:50%!important;width:38px;height:38px;min-width:38px;min-height:38px;flex-basis:38px;background:#eef2f5;color:#344256}
+.sidebar-toggle{display:none;align-items:center;justify-content:center;width:30px;height:30px;flex:0 0 30px;border:1px solid #ffffff30;border-radius:8px;color:#eef2f6;background:#ffffff0d}
+.topbar-sidebar-toggle{display:inline-flex;background:#fff;color:#526173;border-color:#dce2e8}
+@media(min-width:851px){
+  .app-frame{grid-template-columns:0 minmax(0,1fr);transition:grid-template-columns .2s ease}
+  .app-frame:not(.sidebar-collapsed){grid-template-columns:252px minmax(0,1fr)}
+  .app-frame.sidebar-collapsed{grid-template-columns:0 minmax(0,1fr)}
+  .app-frame>.sidebar{position:sticky;top:0;left:auto;height:100vh;width:252px;min-width:252px;overflow:hidden;transform:translateX(0);visibility:visible;pointer-events:auto;transition:transform .2s ease,visibility .2s}
+  .app-frame.sidebar-collapsed>.sidebar{transform:translateX(-100%);visibility:hidden;pointer-events:none}
+  .desktop-sidebar-toggle{display:inline-flex}
+}
+@media(max-width:850px){
+  .app-frame{grid-template-columns:minmax(0,1fr)}
+  .app-frame>.sidebar{position:fixed;top:0;left:0;bottom:0;width:252px;min-width:252px;height:100dvh;overflow-y:auto;transform:translateX(-105%);visibility:visible;pointer-events:auto;transition:transform .2s ease;z-index:30}
+  .app-frame>.sidebar.open{transform:translateX(0)}
+  .app-frame.sidebar-collapsed>.sidebar{visibility:visible}
+  .topbar-sidebar-toggle{display:none}
+  .mobile-nav-scrim.show{display:block;position:fixed;inset:0;background:#101e1b66;z-index:25}
+  .brand-user-copy .brand-title{max-width:150px}
+}
