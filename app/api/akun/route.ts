@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
+import { mkdir, writeFile, unlink } from "node:fs/promises";
+import path from "node:path";
 import bcrypt from "bcryptjs";
 import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
@@ -29,6 +32,67 @@ export async function POST(request: NextRequest) {
     await db.execute("INSERT INTO tb_akun (no_karyawan, nama, jabatan, division, kategori, password, profilepic) VALUES (?, ?, ?, ?, ?, ?, NULL)", [no, nama, jabatan, division, kategori, hash]);
     return NextResponse.json({ success: true, message: "Akun berhasil dibuat." }, { status: 201 });
   } catch (error) { return fail(databaseErrorMessage(error), 500); }
+}
+export async function PATCH(request: NextRequest) {
+  const user = await requireUser();
+  if (isResponse(user)) return user;
+  let uploadedPath: string | null = null;
+  try {
+    const formData = await request.formData();
+    const nik = String(formData.get("no_karyawan") ?? "").trim();
+    const nama = String(formData.get("nama") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+    const photo = formData.get("photo");
+    if (!nik || !nama) return fail("NIK dan nama wajib diisi.");
+    if (nik.length > 64 || nama.length > 150) return fail("NIK maksimal 64 karakter dan nama maksimal 150 karakter.");
+    if (password && password.length < 6) return fail("Password minimal 6 karakter.");
+    if (photo && !(photo instanceof File)) return fail("File foto tidak valid.");
+    if (photo instanceof File && photo.size > 5 * 1024 * 1024) return fail("Ukuran foto maksimal 5 MB.");
+    let filename: string | null = null;
+    if (photo instanceof File && photo.size > 0) {
+      const extensions: Record<string, string> = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif" };
+      const extension = extensions[photo.type];
+      if (!extension) return fail("Format foto didukung: JPG, PNG, WebP, atau GIF.");
+      filename = `${randomBytes(12).toString("hex")}${extension}`;
+      const directory = path.join(process.cwd(), "public", "profile");
+      await mkdir(directory, { recursive: true });
+      uploadedPath = path.join(directory, filename);
+      await writeFile(uploadedPath, Buffer.from(await photo.arrayBuffer()), { flag: "wx" });
+    }
+
+    const nikChanged = nik !== user.no_karyawan;
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [current] = await conn.execute<DBRow[]>("SELECT no_karyawan FROM tb_akun WHERE no_karyawan = ? LIMIT 1 FOR UPDATE", [user.no_karyawan]);
+      if (!current.length) throw new Error("Akun tidak ditemukan.");
+      if (nikChanged) {
+        const [duplicate] = await conn.execute<DBRow[]>("SELECT no_karyawan FROM tb_akun WHERE no_karyawan = ? LIMIT 1", [nik]);
+        if (duplicate.length) throw new Error("NIK tersebut sudah digunakan akun lain.");
+      }
+      const updates = ["nama = ?"];
+      const values: unknown[] = [nama];
+      if (nikChanged) { updates.push("no_karyawan = ?"); values.push(nik); }
+      if (password) { updates.push("password = ?"); values.push(await bcrypt.hash(password, 12)); }
+      if (filename) { updates.push("profilepic = ?"); values.push(filename); }
+      values.push(user.no_karyawan);
+      await conn.execute(`UPDATE tb_akun SET ${updates.join(", ")} WHERE no_karyawan = ?`, values);
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally { conn.release(); }
+
+    return NextResponse.json({
+      success: true,
+      nikChanged,
+      user: { no_karyawan: nik, nama, profilepic: filename },
+      message: "Profil berhasil diperbarui.",
+    });
+  } catch (error) {
+    if (uploadedPath) await unlink(uploadedPath).catch(() => {});
+    return fail(databaseErrorMessage(error), 400);
+  }
 }
 export async function PATCH(request: NextRequest) {
   const user = await requireUser();
