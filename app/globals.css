@@ -128,3 +128,14 @@
 .expiry-safe{color:#187443;background:#dcfce7}
 .expiry-unknown{color:#66756d;background:#edf2ee}
 .product-month{margin-top:5px!important;font-size:10px;color:#849188}
+
+
+/* Searchable selection menus shared by allocation and handover forms */
+.search-select{position:relative;min-width:0;width:100%}
+.search-select>.field{width:100%;min-width:0}
+.search-select-menu{position:absolute;z-index:100;top:calc(100% + 5px);left:0;right:0;max-height:260px;overflow-y:auto;background:#fff;border:1px solid #cfdcd3;border-radius:12px;box-shadow:0 12px 34px rgba(20,55,42,.16);padding:5px}
+.search-select-option{display:flex;width:100%;flex-direction:column;align-items:flex-start;gap:3px;padding:10px;border:0;background:#fff;border-radius:8px;text-align:left;color:var(--ink)}
+.search-select-option:hover,.search-select-option.selected{background:#edf6ef}
+.search-select-option span{font-size:13px;font-weight:600;line-height:1.35}
+.search-select-option small{font-size:11px;color:var(--muted)}
+.search-select-empty{padding:12px;color:var(--muted);font-size:12px}
