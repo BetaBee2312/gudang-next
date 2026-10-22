@@ -44,13 +44,13 @@ function MultiSearchSelect<T extends string>({ values, onChange, options, placeh
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const selected = options.filter((option) => values.includes(option.value));
-  const filtered = options.filter((option) => !values.includes(option.value) && `${option.label} ${option.searchText ?? ""} ${option.hint ?? ""}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 100);
+  const filtered = options.filter((option) => !values.includes(option.value) && `${option.label} ${option.searchText ?? ""} ${option.hint ?? ""}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 20);
   return <div className="search-select">
     <div className="multi-select-control" onClick={() => setOpen(true)}>
       {selected.map((option) => <button type="button" key={option.value} className="multi-select-chip" onClick={(event) => { event.stopPropagation(); onChange(values.filter((value) => value !== option.value)); }} title={`Hapus ${option.label}`}>
         <span>{option.label}</span><span aria-hidden="true">×</span>
       </button>)}
-      <input className="multi-select-input" role="combobox" aria-expanded={open} aria-autocomplete="list" aria-label={placeholder} placeholder={selected.length ? "Cari cabang lain…" : placeholder} value={query} onFocus={() => setOpen(true)} onChange={(event) => { setQuery(event.target.value); setOpen(true); }} onBlur={() => window.setTimeout(() => setOpen(false), 120)} onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); if (event.key === "Enter" && open && filtered[0]) { event.preventDefault(); onChange([...values, filtered[0].value]); setQuery(""); } if (event.key === "Backspace" && !query && values.length) onChange(values.slice(0, -1)); }} />
+      <input className="multi-select-input" role="combobox" aria-expanded={open} aria-autocomplete="list" aria-label={placeholder} placeholder={selected.length ? "Cari cabang lain…" : placeholder} value={query} onFocus={() => setOpen(true)} onChange={(event) => { setQuery(event.target.value); setOpen(true); }} onBlur={() => setOpen(false)} onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); if (event.key === "Enter" && open && filtered[0]) { event.preventDefault(); onChange([...values, filtered[0].value]); setQuery(""); } if (event.key === "Backspace" && !query && values.length) onChange(values.slice(0, -1)); }} />
     </div>
     {open && <div className="search-select-menu" role="listbox">{filtered.length ? filtered.map((option) => <button type="button" role="option" aria-selected={false} key={option.value} className="search-select-option" onMouseDown={(event) => event.preventDefault()} onClick={() => { onChange([...values, option.value]); setQuery(""); }}><span>{option.label}</span>{option.hint && <small>{option.hint}</small>}</button>) : <div className="search-select-empty">{selected.length ? "Semua hasil yang cocok sudah dipilih." : "Tidak ada hasil yang cocok."}</div>}</div>}
     {selected.length > 0 && <p className="table-muted mt-1">Kode cabang: <strong>{selected.map((option) => option.value).join(", ")}</strong></p>}
@@ -216,6 +216,7 @@ export default function SerahTerimaPage() {
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
+    setNotice("");
     try {
       const response = await requestJSON<{ message: string }>("/api/serah-terima", {
         method: "POST",
