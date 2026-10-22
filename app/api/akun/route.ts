@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes } from "node:crypto";
-import { mkdir, writeFile, unlink } from "node:fs/promises";
-import path from "node:path";
 import bcrypt from "bcryptjs";
 import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
@@ -45,7 +42,6 @@ export async function PATCH(request: NextRequest) {
     const name = String(b.nama ?? "").trim();
     if (Object.hasOwn(b, "nama") && !name) return fail("Nama wajib diisi.");
     if (name.length > 150) return fail("Nama maksimal 150 karakter.");
-    if (Object.hasOwn(b, "no_karyawan") && ownProfile) return fail("Perubahan NIK gunakan formulir profil khusus.");
     const updates: string[] = []; const values: unknown[] = [];
     if (Object.hasOwn(b, "nama")) { updates.push("nama = ?"); values.push(name); }
     if (Object.hasOwn(b, "jabatan") && admin) { updates.push("jabatan = ?"); values.push(String(b.jabatan).trim()); }
