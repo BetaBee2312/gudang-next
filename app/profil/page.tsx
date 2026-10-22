@@ -42,29 +42,29 @@ export default function ProfilPage() {
     if (!nik.trim() || !nama.trim()) { setNotice("NIK dan nama wajib diisi."); setError(true); return; }
     setSaving(true);
     try {
-      if (photo) {
-        const formData = new FormData();
-        formData.append("photo", photo);
-        await requestJSON<{ profilepic: string }>("/api/profile/photo", { method: "POST", body: formData });
-      }
-      const d = await requestJSON<{ message: string; profilepic?: string | null }>("/api/profile", {
+      const formData = new FormData();
+      formData.append("no_karyawan", nik.trim());
+      formData.append("nama", nama.trim());
+      if (password) formData.append("password", password);
+      if (photo) formData.append("photo", photo);
+      const d = await requestJSON<{ message: string; nikChanged?: boolean }>("/api/akun/profile", {
         method: "PATCH",
-        body: JSON.stringify({
-          no_karyawan: nik.trim(),
-          nama: nama.trim(),
-          password: password || undefined,
-          upload_photo: Boolean(photo),
-        }),
+        body: formData,
       });
       setNotice(d.message);
-      setPassword(""); setConfirmPass("");
-      if (nik.trim() !== user?.no_karyawan) {
-        await fetch("/api/auth/logout", { method: "POST" });
+      setPassword("");
+      setConfirmPass("");
+      if (d.nikChanged || nik.trim() !== user?.no_karyawan) {
         window.location.replace("/login");
         return;
       }
       const fresh = await requestJSON<{ user: Profile }>("/api/auth/me");
-      setUser(fresh.user); setNik(fresh.user.no_karyawan); setNama(fresh.user.nama); setPhoto(null);
+      setUser(fresh.user);
+      setNik(fresh.user.no_karyawan);
+      setNama(fresh.user.nama);
+      setPhoto(null);
+      if (fileRef.current) fileRef.current.value = "";
+
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Gagal menyimpan profil.");
       setError(true);
