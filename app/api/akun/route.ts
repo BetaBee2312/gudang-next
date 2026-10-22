@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
-import { isAdmin } from "@/lib/auth";
-import { requireUser, requireAdmin, isResponse, fail } from "@/lib/http";
+import { requireUser, isResponse, fail } from "@/lib/http";
 
 export async function GET() {
   const user = await requireUser();
