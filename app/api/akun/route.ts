@@ -36,29 +36,18 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
-  let uploadedPath: string | null = null;
+  let savedPhotoPath: string | null = null;
   try {
-    const formData = await request.formData();
-    const nik = String(formData.get("no_karyawan") ?? "").trim();
-    const nama = String(formData.get("nama") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
-    const photo = formData.get("photo");
+    const body = await request.json();
+    const nik = String(body.no_karyawan ?? "").trim();
+    const nama = String(body.nama ?? "").trim();
+    const password = String(body.password ?? "");
+    const profilepicProvided = Object.hasOwn(body, "profilepic");
+    const profilepic = String(body.profilepic ?? "").trim();
     if (!nik || !nama) return fail("NIK dan nama wajib diisi.");
     if (nik.length > 64 || nama.length > 150) return fail("NIK maksimal 64 karakter dan nama maksimal 150 karakter.");
     if (password && password.length < 6) return fail("Password minimal 6 karakter.");
-    if (photo && !(photo instanceof File)) return fail("File foto tidak valid.");
-    if (photo instanceof File && photo.size > 5 * 1024 * 1024) return fail("Ukuran foto maksimal 5 MB.");
-    let filename: string | null = null;
-    if (photo instanceof File && photo.size > 0) {
-      const extensions: Record<string, string> = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif" };
-      const extension = extensions[photo.type];
-      if (!extension) return fail("Format foto didukung: JPG, PNG, WebP, atau GIF.");
-      filename = `${randomBytes(12).toString("hex")}${extension}`;
-      const directory = path.join(process.cwd(), "public", "profile");
-      await mkdir(directory, { recursive: true });
-      uploadedPath = path.join(directory, filename);
-      await writeFile(uploadedPath, Buffer.from(await photo.arrayBuffer()), { flag: "wx" });
-    }
+    if (profilepicProvided && profilepic && !/^[a-f0-9]{24,32}\.(jpg|png|webp|gif)$/.test(profilepic)) return fail("Nama file foto tidak valid.");
 
     const nikChanged = nik !== user.no_karyawan;
     const conn = await db.getConnection();
@@ -70,11 +59,17 @@ export async function PATCH(request: NextRequest) {
         const [duplicate] = await conn.execute<DBRow[]>("SELECT no_karyawan FROM tb_akun WHERE no_karyawan = ? LIMIT 1", [nik]);
         if (duplicate.length) throw new Error("NIK tersebut sudah digunakan akun lain.");
       }
+      if (profilepicProvided && profilepic) {
+        const allowedPath = path.join(process.cwd(), "public", "profile", profilepic);
+        const { stat } = await import("node:fs/promises");
+        const fileStat = await stat(allowedPath).catch(() => null);
+        if (!fileStat?.isFile()) throw new Error("Foto profil tidak ditemukan. Coba unggah ulang.");
+      }
       const updates = ["nama = ?"];
       const values: unknown[] = [nama];
       if (nikChanged) { updates.push("no_karyawan = ?"); values.push(nik); }
       if (password) { updates.push("password = ?"); values.push(await bcrypt.hash(password, 12)); }
-      if (filename) { updates.push("profilepic = ?"); values.push(filename); }
+      if (profilepicProvided) { updates.push("profilepic = ?"); values.push(profilepic || null); }
       values.push(user.no_karyawan);
       await conn.execute(`UPDATE tb_akun SET ${updates.join(", ")} WHERE no_karyawan = ?`, values);
       await conn.commit();
@@ -82,42 +77,16 @@ export async function PATCH(request: NextRequest) {
       await conn.rollback();
       throw error;
     } finally { conn.release(); }
-
-    return NextResponse.json({
-      success: true,
-      nikChanged,
-      user: { no_karyawan: nik, nama, profilepic: filename },
-      message: "Profil berhasil diperbarui.",
-    });
+    if (nikChanged) {
+      const response = NextResponse.json({ success: true, nikChanged, message: "NIK berhasil diubah. Silakan login kembali menggunakan NIK baru." });
+      response.cookies.set("gudang_session", "", { httpOnly: true, path: "/", maxAge: 0, sameSite: "lax" });
+      return response;
+    }
+    return NextResponse.json({ success: true, nikChanged: false, message: "Profil berhasil diperbarui." });
   } catch (error) {
-    if (uploadedPath) await unlink(uploadedPath).catch(() => {});
+    if (savedPhotoPath) await unlink(savedPhotoPath).catch(() => {});
     return fail(databaseErrorMessage(error), 400);
   }
-}
-export async function PATCH(request: NextRequest) {
-  const user = await requireUser();
-  if (isResponse(user)) return user;
-  try {
-    const b = await request.json();
-    const target = String(b.no_karyawan ?? user.no_karyawan).trim();
-    const ownProfile = target === user.no_karyawan;
-    const admin = isAdmin(user);
-    if (!ownProfile && !admin) return fail("Tidak diizinkan mengubah akun orang lain.", 403);
-    const updates: string[] = []; const values: unknown[] = [];
-    if (Object.hasOwn(b, "nama")) { updates.push("nama = ?"); values.push(String(b.nama).trim()); }
-    if (Object.hasOwn(b, "jabatan") && admin) { updates.push("jabatan = ?"); values.push(String(b.jabatan).trim()); }
-    if (Object.hasOwn(b, "division") && admin) { updates.push("division = ?"); values.push(String(b.division).trim()); }
-    if (Object.hasOwn(b, "kategori") && admin) { updates.push("kategori = ?"); values.push(String(b.kategori).trim()); }
-    if (Object.hasOwn(b, "profilepic")) { updates.push("profilepic = ?"); values.push(String(b.profilepic ?? "").trim() || null); }
-    if (b.password) {
-      if (String(b.password).length < 6) return fail("Password minimal 6 karakter.");
-      updates.push("password = ?"); values.push(await bcrypt.hash(String(b.password), 12));
-    }
-    if (!updates.length) return fail("Tidak ada perubahan yang valid.");
-    values.push(target);
-    await db.execute(`UPDATE tb_akun SET ${updates.join(", ")} WHERE no_karyawan = ?`, values);
-    return NextResponse.json({ success: true, message: "Akun berhasil diperbarui. Login ulang mungkin diperlukan." });
-  } catch (error) { return fail(databaseErrorMessage(error), 500); }
 }
 export async function DELETE(request: NextRequest) {
   const user = await requireAdmin();
