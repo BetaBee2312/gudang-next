@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Boxes, ClipboardCheck, ClipboardList, Bot, LogOut, Menu, PackageSearch, Store, UserRound, Users, X } from "lucide-react";
+import { Boxes, ClipboardCheck, ClipboardList, Bot, LogOut, Menu, PackageSearch, Store, UserRound, Users, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
 
 const nav = [
@@ -25,7 +25,7 @@ const titles: Record<string, string> = { "/barang": "Daftar Barang", "/stok-habi
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname(); const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null); const [ready, setReady] = useState(false); const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<SessionUser | null>(null); const [ready, setReady] = useState(false); const [mobileOpen, setMobileOpen] = useState(false); const [desktopCollapsed, setDesktopCollapsed] = useState(true);
   useEffect(() => {
     let alive = true;
     fetch("/api/auth/me", { cache: "no-store" }).then(r => r.json()).then(data => {
@@ -44,13 +44,13 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const admin = ["admin", "creator"].includes(user.kategori.toLowerCase());
   const isMD = user.division.trim().toLowerCase() === "md";
   const visibleNav = isMD ? [{ section: "Akun", items: nav.flatMap(group => group.items).filter(item => ["/barang", "/profil"].includes(item.href)) }] : nav;
-  return <div className="app-frame">
+  return <div className={`app-frame ${desktopCollapsed ? "sidebar-collapsed" : ""}`}>
     <div className={`mobile-nav-scrim ${mobileOpen ? "show" : ""}`} onClick={() => setMobileOpen(false)} />
     <aside className={`sidebar ${mobileOpen ? "open" : ""}`}>
-      <div className="brand"><div className="brand-mark">GM</div><div><div className="brand-title">Gudang Marketing</div><div className="brand-sub">Inventory workspace</div></div><button className="ml-auto md:hidden" onClick={() => setMobileOpen(false)} aria-label="Tutup menu"><X size={17}/></button></div>
+      <div className="brand"><Link href="/profil" className="brand-user" title="Buka profil"><div className="avatar brand-avatar">{user.profilepic ? <img src={`/profile/${encodeURIComponent(user.profilepic)}`} alt="" /> : user.nama?.slice(0,1)?.toUpperCase() || "U"}</div><div className="brand-user-copy"><div className="brand-title">{user.nama}</div><div className="brand-sub">{user.kategori} · {user.division}</div></div></Link><button className="sidebar-toggle desktop-sidebar-toggle" onClick={() => setDesktopCollapsed(v=>!v)} aria-label={desktopCollapsed?"Tampilkan sidebar":"Sembunyikan sidebar"} title={desktopCollapsed?"Tampilkan sidebar":"Sembunyikan sidebar"}>{desktopCollapsed?<PanelLeftOpen size={16}/>:<PanelLeftClose size={16}/>}</button><button className="ml-auto md:hidden" onClick={() => setMobileOpen(false)} aria-label="Tutup menu"><X size={17}/></button></div>
       {visibleNav.map(group => <div key={group.section} className="mb-4"><div className="nav-section">{group.section}</div>{group.items.filter(item => !("admin" in item && item.admin && !admin) && (user.division.toLowerCase() !== "md" || ["/barang", "/profil"].includes(item.href))).map(item => { const Icon = item.icon; const active = pathname === item.href || (pathname === "/" && item.href === "/barang"); return <Link key={item.href} href={item.href} className={`nav-link ${active ? "active" : ""}`}><Icon/><span>{item.label}</span></Link>; })}</div>)}
-      <div className="sidebar-bottom"><div className="user-mini"><Link href="/profil" className="sidebar-profile-link"><div className="avatar sidebar-profile-avatar">{user.profilepic ? <img src={`/profile/${encodeURIComponent(user.profilepic)}`} alt="" /> : user.nama?.slice(0, 1)?.toUpperCase() || "U"}</div><div className="sidebar-profile-copy"><div className="user-name truncate">{user.nama}</div><div className="user-role">{user.kategori} · {user.division}</div></div></Link></div><button className="logout-button" onClick={logout}><LogOut size={15}/> Keluar dari aplikasi</button></div>
+      <div className="sidebar-bottom"><button className="logout-button" onClick={logout}><LogOut size={15}/><span>Keluar dari aplikasi</span></button></div>
     </aside>
-    <div className="main-column"><header className="topbar"><div className="flex items-center gap-3"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Buka menu"><Menu/></button><div><div className="topbar-kicker">Ruang kerja / Gudang Marketing</div><h2>{titles[pathname] ?? "Dashboard"}</h2></div></div><div className="topbar-right"><span className="status-pill"><span className="status-dot"/> Sistem inventori</span><Link href="/profil" className="avatar topbar-profile-avatar" title="Profil saya">{user.profilepic ? <img src={`/profile/${encodeURIComponent(user.profilepic)}`} alt="" /> : user.nama?.slice(0,1)?.toUpperCase() || "U"}</Link></div></header><main className="main-content">{children}</main></div>
+    <div className="main-column"><header className="topbar"><div className="flex items-center gap-3"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Buka menu"><Menu/></button><button className="desktop-sidebar-toggle topbar-sidebar-toggle" onClick={() => setDesktopCollapsed(v=>!v)} aria-label={desktopCollapsed?"Tampilkan sidebar":"Sembunyikan sidebar"} title={desktopCollapsed?"Tampilkan sidebar":"Sembunyikan sidebar"}>{desktopCollapsed?<PanelLeftOpen size={17}/>:<PanelLeftClose size={17}/>}</button><div><div className="topbar-kicker">Ruang kerja / Gudang Marketing</div><h2>{titles[pathname] ?? "Dashboard"}</h2></div></div><div className="topbar-right"><span className="status-pill"><span className="status-dot"/> Sistem inventori</span><Link href="/profil" className="avatar topbar-profile-avatar" title="Profil saya">{user.profilepic ? <img src={`/profile/${encodeURIComponent(user.profilepic)}`} alt="" /> : user.nama?.slice(0,1)?.toUpperCase() || "U"}</Link></div></header><main className="main-content">{children}</main></div>
   </div>;
 }
