@@ -14,23 +14,75 @@ export async function POST(request: NextRequest) {
   const user = await requireAdmin();
   if (isResponse(user)) return user;
   try {
-    const b = await request.json();
-    const kode = String(b.kode_cabang ?? "").trim(); const nama = String(b.nama_cabang ?? "").trim();
-    const singkatan = String(b.singkatan ?? "").trim(); const dc = String(b.dc_support ?? "").trim();
-    if (!kode || !nama) return fail("Kode dan nama cabang wajib diisi.");
-    await db.execute("INSERT INTO tb_cabang (kode_cabang, nama_cabang, singkatan, dc_support) VALUES (?, ?, ?, ?)", [kode, nama, singkatan, dc]);
-    return NextResponse.json({ success: true, message: "Cabang ditambahkan." }, { status: 201 });
-  } catch (error) { return fail(databaseErrorMessage(error), 500); }
+    const body = await request.json();
+    const rows = Array.isArray(body.rows) ? body.rows : [body];
+    if (!rows.length || rows.length > 1000) return fail("Jumlah cabang harus antara 1 sampai 1000.");
+    const normalized = rows.map((row: Record<string, unknown>) => ({
+      kode: String(row.kode_cabang ?? "").trim(),
+      nama: String(row.nama_cabang ?? "").trim(),
+      singkatan: String(row.singkatan ?? "").trim(),
+      dc: String(row.dc_support ?? "").trim(),
+      cluster: String(row.cluster ?? "").trim(),
+    }));
+    if (normalized.some(row => !row.kode || !row.nama)) return fail("Setiap cabang wajib memiliki kode_cabang dan nama_cabang.");
+    if (new Set(normalized.map(row => row.kode)).size !== normalized.length) return fail("Ada kode cabang duplikat dalam data yang dikirim.");
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      for (const row of normalized) {
+        await conn.execute(
+          "INSERT INTO tb_cabang (kode_cabang, nama_cabang, singkatan, dc_support, cluster) VALUES (?, ?, ?, ?, ?)",
+          [row.kode, row.nama, row.singkatan, row.dc, row.cluster],
+        );
+      }
+      await conn.commit();
+      return NextResponse.json({ success: true, message: `${normalized.length} cabang berhasil ditambahkan.` }, { status: 201 });
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  } catch (error) { return fail(databaseErrorMessage(error), 400); }
 }
 export async function PATCH(request: NextRequest) {
   const user = await requireAdmin();
   if (isResponse(user)) return user;
   try {
-    const b = await request.json(); const kode = String(b.kode_cabang ?? "").trim();
-    if (!kode) return fail("Kode cabang tidak valid.");
-    await db.execute("UPDATE tb_cabang SET nama_cabang = ?, singkatan = ?, dc_support = ? WHERE kode_cabang = ?", [String(b.nama_cabang ?? "").trim(), String(b.singkatan ?? "").trim(), String(b.dc_support ?? "").trim(), kode]);
-    return NextResponse.json({ success: true, message: "Cabang diperbarui." });
-  } catch (error) { return fail(databaseErrorMessage(error), 500); }
+    const body = await request.json();
+    const rows = Array.isArray(body.rows) ? body.rows : [body];
+    if (!rows.length || rows.length > 1000) return fail("Jumlah cabang harus antara 1 sampai 1000.");
+    const normalized = rows.map((row: Record<string, unknown>) => ({
+      kode: String(row.kode_cabang ?? "").trim(),
+      nama: String(row.nama_cabang ?? "").trim(),
+      singkatan: String(row.singkatan ?? "").trim(),
+      dc: String(row.dc_support ?? "").trim(),
+      cluster: String(row.cluster ?? "").trim(),
+    }));
+    if (normalized.some(row => !row.kode || !row.nama)) return fail("Setiap cabang wajib memiliki kode_cabang dan nama_cabang.");
+    if (new Set(normalized.map(row => row.kode)).size !== normalized.length) return fail("Ada kode cabang duplikat dalam data yang dikirim.");
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      for (const row of normalized) {
+        const [result] = await conn.execute(
+          "UPDATE tb_cabang SET nama_cabang = ?, singkatan = ?, dc_support = ?, cluster = ? WHERE kode_cabang = ?",
+          [row.nama, row.singkatan, row.dc, row.cluster, row.kode],
+        );
+        if ("affectedRows" in result && Number(result.affectedRows) === 0) {
+          const [exists] = await conn.execute<DBRow[]>("SELECT kode_cabang FROM tb_cabang WHERE kode_cabang = ?", [row.kode]);
+          if (!exists.length) throw new Error(`Kode cabang ${row.kode} tidak ditemukan.`);
+        }
+      }
+      await conn.commit();
+      return NextResponse.json({ success: true, message: `${normalized.length} cabang berhasil diperbarui.` });
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  } catch (error) { return fail(databaseErrorMessage(error), 400); }
 }
 export async function DELETE(request: NextRequest) {
   const user = await requireAdmin();
