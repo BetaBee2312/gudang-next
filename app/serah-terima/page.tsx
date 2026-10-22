@@ -32,11 +32,11 @@ type Handover = {
   cabang: string;
 };
 
-type Line = { id_barang: string; keperluan: string; jumlah: string; cabang: string[] };
+type Line = { keperluan: string; jumlah: string; cabang: string[] };
 type Product = { id_barang: string; nama_barang: string; qty_terkini: number; kategori: string; plu?: string | null };
 type HandoverGroup = { key: string; rows: Handover[]; head: Handover };
 
-const EMPTY_LINE: Line = { id_barang: "", keperluan: "", jumlah: "1", cabang: [] };
+const EMPTY_LINE: Line = { keperluan: "", jumlah: "1", cabang: [] };
 
 type SearchOption<T extends string> = { value: T; label: string; searchText?: string; hint?: string };
 
@@ -219,7 +219,7 @@ export default function SerahTerimaPage() {
     try {
       const response = await requestJSON<{ message: string }>("/api/serah-terima", {
         method: "POST",
-        body: JSON.stringify({ nama, jabatan, tujuan, tanggal, items: lines.map(({ id_barang, keperluan, jumlah, cabang }) => ({ id_barang, keperluan, jumlah, cabang: cabang.join(",") })) }),
+        body: JSON.stringify({ nama, jabatan, tujuan, tanggal, items: lines.map(({ keperluan, jumlah, cabang }) => ({ keperluan, jumlah, cabang: cabang.join(",") })) }),
       });
       setNotice(response.message);
       setModal(false);
@@ -684,24 +684,17 @@ export default function SerahTerimaPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Keperluan / nama barang</label>
-                    <SearchSelect
-                      value={line.id_barang}
-                      onChange={(value) => {
-                        const selectedProduct = products.find((product) => product.id_barang === value);
+                    <input
+                      className="field"
+                      value={line.keperluan}
+                      onChange={(event) =>
                         setLines((old) => old.map((current, lineIndex) =>
-                          lineIndex === index ? { ...current, id_barang: value, keperluan: selectedProduct?.nama_barang ?? "" } : current,
-                        ));
-                      }}
-                      placeholder="Cari nama / ID barang…"
+                          lineIndex === index ? { ...current, keperluan: event.target.value, id_barang: "" } : current,
+                        ))
+                      }
+                      placeholder="Contoh: YMC, BALON PROMINA, atau keperluan lain…"
                       required
-                      options={products.map((product) => ({
-                        value: product.id_barang,
-                        label: product.nama_barang,
-                        searchText: `${product.id_barang} ${product.plu ?? ""} ${product.kategori}`,
-                        hint: `${product.id_barang} · stok ${product.qty_terkini}`,
-                      }))}
                     />
-                    {line.keperluan && <p className="table-muted mt-1">Nama barang terisi otomatis: <strong>{line.keperluan}</strong></p>}
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
