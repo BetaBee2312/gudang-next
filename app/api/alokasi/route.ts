@@ -64,12 +64,12 @@ export async function PATCH(request: NextRequest) {
   if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul alokasi.", 403);
   if (!isAdmin(user)) return fail("Aksi ini hanya untuk Admin atau Creator.", 403);
   const body = await request.json();
-  const prefix = String(body.id_alokasi ?? "").trim(); const action = String(body.action ?? "").trim();
-  if (!prefix || !["approve", "reject"].includes(action)) return fail("Aksi alokasi tidak valid.");
+  const id = String(body.id_alokasi ?? "").trim(); const action = String(body.action ?? "").trim();
+  if (!id || !["approve", "reject"].includes(action)) return fail("Aksi alokasi tidak valid.");
   let conn;
   try {
     conn = await db.getConnection(); await conn.beginTransaction();
-    const [rows] = await conn.execute<DBRow[]>("SELECT id_alokasi, id_barang, qty_teralokasi, status FROM tb_list_alokasi WHERE id_alokasi LIKE ? FOR UPDATE", [`${prefix}%`]);
+    const [rows] = await conn.execute<DBRow[]>("SELECT id_alokasi, id_barang, qty_teralokasi, status FROM tb_list_alokasi WHERE id_alokasi = ? FOR UPDATE", [id]);
     if (!rows.length) throw new Error("Data alokasi tidak ditemukan.");
     if (action === "reject") {
       for (const row of rows) {
@@ -80,7 +80,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
     const status = action === "approve" ? `Approved by ${user.nama || user.no_karyawan}` : `Rejected by ${user.nama || user.no_karyawan}`;
-    await conn.execute("UPDATE tb_list_alokasi SET status = ? WHERE id_alokasi LIKE ? AND status = 'pending'", [status, `${prefix}%`]);
+    await conn.execute("UPDATE tb_list_alokasi SET status = ? WHERE id_alokasi = ? AND status = 'pending'", [status, id]);
     await conn.commit();
     return NextResponse.json({ success: true, message: action === "approve" ? "Alokasi dikonfirmasi." : "Alokasi ditolak dan stok pending dikembalikan." });
   } catch (error) { if (conn) await conn.rollback(); return fail(databaseErrorMessage(error), 400); }

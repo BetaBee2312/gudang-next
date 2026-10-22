@@ -22,7 +22,9 @@ export async function POST(request: NextRequest) {
     const tujuan = String(body.tujuan ?? "").trim(); const tanggal = String(body.tanggal ?? "").trim();
     const items = Array.isArray(body.items) ? body.items : [];
     if (!nama || !jabatan || !tujuan || !tanggal || !items.length) return fail("Nama, jabatan, tujuan, tanggal, dan minimal satu keperluan wajib diisi.");
-    if (items.some((x: Record<string, unknown>) => !String(x.keperluan ?? "").trim())) return fail("Deskripsi keperluan tidak boleh kosong.");
+    if (items.some((x: Record<string, unknown>) => !String(x.keperluan ?? "").trim() || !String(x.jumlah ?? "").trim())) return fail("Deskripsi keperluan dan jumlah tidak boleh kosong.");
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(tanggal) || Number.isNaN(Date.parse(`${tanggal}T00:00:00`))) return fail("Tanggal tidak valid.");
+    if (items.length > 100) return fail("Maksimal 100 baris untuk satu dokumen serah-terima.");
     let conn;
     try {
       conn = await db.getConnection(); await conn.beginTransaction();
