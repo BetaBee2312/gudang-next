@@ -24,7 +24,7 @@ function SearchSelect<T extends string>({ value, onChange, options, placeholder,
 export default function AlokasiPage() {
   const [items, setItems] = useState<Allocation[]>([]); const [products, setProducts] = useState<Product[]>([]); const [branches, setBranches] = useState<Branch[]>([]); const [loading, setLoading] = useState(true); const [admin, setAdmin] = useState(false); const [userName, setUserName] = useState("");
   const [query, setQuery] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`; });
+  const [selectedMonth, setSelectedMonth] = useState(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`; });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
   const [status, setStatus] = useState(""); const [notice, setNotice] = useState(""); const [modal, setModal] = useState(false); const [branch, setBranch] = useState(""); const [pemohon, setPemohon] = useState(""); const [lines, setLines] = useState<ItemForm[]>([{ id_barang: "", qty: "1" }]); const [saving, setSaving] = useState(false);
