@@ -443,31 +443,6 @@ export default function SerahTerimaPage() {
         </div>
       )}
 
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-top">
-            Total dokumen <span className="stat-icon"><ClipboardList /></span>
-          </div>
-          <div className="stat-value">{groups.length}</div>
-          <div className="stat-note">Kelompok ID serah-terima</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-top">Nama penerima unik</div>
-          <div className="stat-value">{uniqueRecipients}</div>
-          <div className="stat-note">Orang pada dokumen</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-top">Total baris item</div>
-          <div className="stat-value">{totalLines.toLocaleString("id-ID")}</div>
-          <div className="stat-note">Seluruh baris di tb_serah_terima</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-top">Cabang terlibat</div>
-          <div className="stat-value">{uniqueBranches}</div>
-          <div className="stat-note">Kode/nama cabang berbeda</div>
-        </div>
-      </div>
-
       <section className="panel">
         <div className="panel-header">
           <div>
