@@ -556,7 +556,7 @@ export default function SerahTerimaPage() {
                               CABANG:
                             </span>
                             <div className="flex flex-wrap gap-1.5">
-                              {resolveBranchNames(row.cabang, true).map((branch, i) => (
+                              {resolveBranchNames(row.cabang).map((branch, i) => (
                                 <span
                                   key={i}
                                   className="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-medium whitespace-nowrap border border-indigo-100"
