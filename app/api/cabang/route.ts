@@ -6,7 +6,7 @@ export async function GET() {
   const user = await requireUser();
   if (isResponse(user)) return user;
   try {
-    const [rows] = await db.execute<DBRow[]>("SELECT kode_cabang, nama_cabang, singkatan, dc_support FROM tb_cabang ORDER BY nama_cabang ASC");
+    const [rows] = await db.execute<DBRow[]>("SELECT kode_cabang, nama_cabang, singkatan, dc_support, cluster FROM tb_cabang ORDER BY nama_cabang ASC");
     return NextResponse.json({ success: true, data: rows });
   } catch (error) { return fail(databaseErrorMessage(error), 500); }
 }
