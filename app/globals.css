@@ -139,3 +139,11 @@
 .search-select-option span{font-size:13px;font-weight:600;line-height:1.35}
 .search-select-option small{font-size:11px;color:var(--muted)}
 .search-select-empty{padding:12px;color:var(--muted);font-size:12px}
+
+/* Multi-branch selector chips */
+.multi-select-control{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-height:44px;width:100%;padding:6px 9px;border:1px solid #d5e2d8;border-radius:11px;background:#fff}
+.multi-select-control:focus-within{outline:3px solid #b7d86c;outline-offset:2px}
+.multi-select-chip{display:inline-flex;align-items:center;gap:7px;max-width:100%;border:1px solid #c8ddcc;border-radius:999px;background:#edf6ef;color:#20483a;padding:5px 9px;font-size:11px;font-weight:600}
+.multi-select-chip span:first-child{overflow-wrap:anywhere}
+.multi-select-chip span:last-child{font-size:15px;line-height:1;color:#607d69}
+.multi-select-input{flex:1 1 130px;min-width:100px;border:0!important;outline:0!important;padding:5px 2px!important;background:transparent!important;box-shadow:none!important}

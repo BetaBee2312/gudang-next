@@ -32,13 +32,31 @@ type Handover = {
   cabang: string;
 };
 
-type Line = { keperluan: string; jumlah: string; cabang: string };
+type Line = { id_barang: string; keperluan: string; jumlah: string; cabang: string[] };
 type Product = { id_barang: string; nama_barang: string; qty_terkini: number; kategori: string; plu?: string | null };
 type HandoverGroup = { key: string; rows: Handover[]; head: Handover };
 
-const EMPTY_LINE: Line = { keperluan: "", jumlah: "1", cabang: "" };
+const EMPTY_LINE: Line = { id_barang: "", keperluan: "", jumlah: "1", cabang: [] };
 
 type SearchOption<T extends string> = { value: T; label: string; searchText?: string; hint?: string };
+
+function MultiSearchSelect<T extends string>({ values, onChange, options, placeholder }: { values: T[]; onChange: (values: T[]) => void; options: SearchOption<T>[]; placeholder: string }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const selected = options.filter((option) => values.includes(option.value));
+  const filtered = options.filter((option) => !values.includes(option.value) && `${option.label} ${option.searchText ?? ""} ${option.hint ?? ""}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 100);
+  return <div className="search-select">
+    <div className="multi-select-control" onClick={() => setOpen(true)}>
+      {selected.map((option) => <button type="button" key={option.value} className="multi-select-chip" onClick={(event) => { event.stopPropagation(); onChange(values.filter((value) => value !== option.value)); }} title={`Hapus ${option.label}`}>
+        <span>{option.label}</span><span aria-hidden="true">×</span>
+      </button>)}
+      <input className="multi-select-input" role="combobox" aria-expanded={open} aria-autocomplete="list" aria-label={placeholder} placeholder={selected.length ? "Cari cabang lain…" : placeholder} value={query} onFocus={() => setOpen(true)} onChange={(event) => { setQuery(event.target.value); setOpen(true); }} onBlur={() => window.setTimeout(() => setOpen(false), 120)} onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); if (event.key === "Enter" && open && filtered[0]) { event.preventDefault(); onChange([...values, filtered[0].value]); setQuery(""); } if (event.key === "Backspace" && !query && values.length) onChange(values.slice(0, -1)); }} />
+    </div>
+    {open && <div className="search-select-menu" role="listbox">{filtered.length ? filtered.map((option) => <button type="button" role="option" aria-selected={false} key={option.value} className="search-select-option" onMouseDown={(event) => event.preventDefault()} onClick={() => { onChange([...values, option.value]); setQuery(""); }}><span>{option.label}</span>{option.hint && <small>{option.hint}</small>}</button>) : <div className="search-select-empty">{selected.length ? "Semua hasil yang cocok sudah dipilih." : "Tidak ada hasil yang cocok."}</div>}</div>}
+    {selected.length > 0 && <p className="table-muted mt-1">Kode cabang: <strong>{selected.map((option) => option.value).join(", ")}</strong></p>}
+  </div>;
+}
+
 function SearchSelect<T extends string>({ value, onChange, options, placeholder, required = false }: { value: T; onChange: (value: T) => void; options: SearchOption<T>[]; placeholder: string; required?: boolean }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -201,7 +219,7 @@ export default function SerahTerimaPage() {
     try {
       const response = await requestJSON<{ message: string }>("/api/serah-terima", {
         method: "POST",
-        body: JSON.stringify({ nama, jabatan, tujuan, tanggal, items: lines }),
+        body: JSON.stringify({ nama, jabatan, tujuan, tanggal, items: lines.map(({ id_barang, keperluan, jumlah, cabang }) => ({ id_barang, keperluan, jumlah, cabang: cabang.join(",") })) }),
       });
       setNotice(response.message);
       setModal(false);
@@ -667,21 +685,23 @@ export default function SerahTerimaPage() {
                   <div className="form-group">
                     <label className="form-label">Keperluan / nama barang</label>
                     <SearchSelect
-                      value={line.keperluan}
-                      onChange={(value) =>
+                      value={line.id_barang}
+                      onChange={(value) => {
+                        const selectedProduct = products.find((product) => product.id_barang === value);
                         setLines((old) => old.map((current, lineIndex) =>
-                          lineIndex === index ? { ...current, keperluan: value } : current,
-                        ))
-                      }
+                          lineIndex === index ? { ...current, id_barang: value, keperluan: selectedProduct?.nama_barang ?? "" } : current,
+                        ));
+                      }}
                       placeholder="Cari nama / ID barang…"
                       required
                       options={products.map((product) => ({
-                        value: product.nama_barang,
+                        value: product.id_barang,
                         label: product.nama_barang,
                         searchText: `${product.id_barang} ${product.plu ?? ""} ${product.kategori}`,
                         hint: `${product.id_barang} · stok ${product.qty_terkini}`,
                       }))}
                     />
+                    {line.keperluan && <p className="table-muted mt-1">Nama barang terisi otomatis: <strong>{line.keperluan}</strong></p>}
                   </div>
                   <div className="form-grid">
                     <div className="form-group">
@@ -699,22 +719,7 @@ export default function SerahTerimaPage() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Cabang</label>
-                      <SearchSelect
-                        value={line.cabang}
-                        onChange={(value) =>
-                          setLines((old) => old.map((current, lineIndex) =>
-                            lineIndex === index ? { ...current, cabang: value } : current,
-                          ))
-                        }
-                        placeholder="Cari nama / kode cabang…"
-                        options={branches.map((branch) => ({
-                          value: String(branch.kode_cabang),
-                          label: branch.nama_cabang,
-                          searchText: String(branch.kode_cabang),
-                          hint: `Preview kode: ${branch.singkatan?.trim() || branch.kode_cabang}`,
-                        }))}
-                      />
-                      {line.cabang && <p className="table-muted mt-1">Preview kode: <strong>{resolveBranchNames(line.cabang, true).join(", ")}</strong></p>}
+                      <MultiSearchSelect values={line.cabang} onChange={(values) => setLines(old => old.map((current,lineIndex)=>lineIndex===index?{...current,cabang:values}:current))} placeholder="Cari dan pilih satu atau beberapa cabang…" options={branches.map(branch=>({value:String(branch.kode_cabang),label:branch.nama_cabang,searchText:String(branch.kode_cabang),hint:`Preview kode: ${branch.singkatan?.trim()||branch.kode_cabang}`}))} />
                     </div>
                   </div>
                 </div>
