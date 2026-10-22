@@ -42,9 +42,6 @@ type SearchOption<T extends string> = { value: T; label: string; searchText?: st
 
 function MultiSearchSelect<T extends string>({ values, onChange, options, placeholder }: { values: T[]; onChange: (values: T[]) => void; options: SearchOption<T>[]; placeholder: string }) {
   const [query, setQuery] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 15;
   const [open, setOpen] = useState(false);
   const selected = options.filter((option) => values.includes(option.value));
   const filtered = options.filter((option) => !values.includes(option.value) && `${option.label} ${option.searchText ?? ""} ${option.hint ?? ""}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 20);
