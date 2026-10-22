@@ -37,7 +37,13 @@ export async function POST(request: NextRequest) {
       let number = maxNum + 1; let charCode = 97;
       for (const item of items) {
         const id = `${datePrefix}-${String(number).padStart(3, "0")}${String.fromCharCode(charCode)}`;
-        await conn.execute("INSERT INTO tb_serah_terima (id, nama, jabatan, tujuan, tanggal, keperluan, jumlah, cabang) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [id, nama, jabatan, tujuan, tanggal, String(item.keperluan).trim(), String(item.jumlah ?? "").trim(), String(item.cabang ?? "").trim()]);
+        const rawBranches = Array.isArray(item.cabang) ? item.cabang : String(item.cabang ?? "").split(",");
+        const branchCodes = [...new Set(rawBranches.map((value: unknown) => String(value).trim()).filter(Boolean))];
+        if (branchCodes.length) {
+          const [branchRows] = await conn.execute<DBRow[]>(`SELECT kode_cabang FROM tb_cabang WHERE kode_cabang IN (${branchCodes.map(() => "?").join(",")})`, branchCodes);
+          if (branchRows.length !== branchCodes.length) throw new Error("Satu atau beberapa cabang yang dipilih tidak ditemukan.");
+        }
+        await conn.execute("INSERT INTO tb_serah_terima (id, nama, jabatan, tujuan, tanggal, keperluan, jumlah, cabang) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [id, nama, jabatan, tujuan, tanggal, String(item.keperluan).trim(), String(item.jumlah ?? "").trim(), branchCodes.join(",")]);
         charCode++;
         if (charCode > 122) { charCode = 97; number++; }
       }
