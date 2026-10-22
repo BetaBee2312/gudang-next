@@ -30,19 +30,12 @@ export async function POST(request: NextRequest) {
     try {
       await conn.beginTransaction();
       for (const row of normalized) {
-        await conn.execute(
-          "INSERT INTO tb_cabang (kode_cabang, nama_cabang, singkatan, dc_support, cluster) VALUES (?, ?, ?, ?, ?)",
-          [row.kode, row.nama, row.singkatan, row.dc, row.cluster],
-        );
+        await conn.execute("INSERT INTO tb_cabang (kode_cabang, nama_cabang, singkatan, dc_support, cluster) VALUES (?, ?, ?, ?, ?)", [row.kode, row.nama, row.singkatan, row.dc, row.cluster]);
       }
       await conn.commit();
       return NextResponse.json({ success: true, message: `${normalized.length} cabang berhasil ditambahkan.` }, { status: 201 });
-    } catch (error) {
-      await conn.rollback();
-      throw error;
-    } finally {
-      conn.release();
-    }
+    } catch (error) { await conn.rollback(); throw error; }
+    finally { conn.release(); }
   } catch (error) { return fail(databaseErrorMessage(error), 400); }
 }
 export async function PATCH(request: NextRequest) {
@@ -65,10 +58,7 @@ export async function PATCH(request: NextRequest) {
     try {
       await conn.beginTransaction();
       for (const row of normalized) {
-        const [result] = await conn.execute(
-          "UPDATE tb_cabang SET nama_cabang = ?, singkatan = ?, dc_support = ?, cluster = ? WHERE kode_cabang = ?",
-          [row.nama, row.singkatan, row.dc, row.cluster, row.kode],
-        );
+        const [result] = await conn.execute("UPDATE tb_cabang SET nama_cabang = ?, singkatan = ?, dc_support = ?, cluster = ? WHERE kode_cabang = ?", [row.nama, row.singkatan, row.dc, row.cluster, row.kode]);
         if ("affectedRows" in result && Number(result.affectedRows) === 0) {
           const [exists] = await conn.execute<DBRow[]>("SELECT kode_cabang FROM tb_cabang WHERE kode_cabang = ?", [row.kode]);
           if (!exists.length) throw new Error(`Kode cabang ${row.kode} tidak ditemukan.`);
@@ -76,12 +66,8 @@ export async function PATCH(request: NextRequest) {
       }
       await conn.commit();
       return NextResponse.json({ success: true, message: `${normalized.length} cabang berhasil diperbarui.` });
-    } catch (error) {
-      await conn.rollback();
-      throw error;
-    } finally {
-      conn.release();
-    }
+    } catch (error) { await conn.rollback(); throw error; }
+    finally { conn.release(); }
   } catch (error) { return fail(databaseErrorMessage(error), 400); }
 }
 export async function DELETE(request: NextRequest) {
