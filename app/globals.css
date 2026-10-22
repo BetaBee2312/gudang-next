@@ -212,11 +212,18 @@
 .topbar-sidebar-toggle{display:inline-flex;background:transparent;color:#5f7167;border-color:var(--line)}
 @media(min-width:851px){
   .desktop-sidebar-toggle{display:inline-flex}
-  .app-frame{grid-template-columns:252px minmax(0,1fr);transition:grid-template-columns .2s ease}
+  .app-frame{grid-template-columns:252px minmax(0,1fr);transition:grid-template-columns .22s ease}
   .app-frame.sidebar-collapsed{grid-template-columns:0 minmax(0,1fr)}
   .app-frame.sidebar-collapsed>.sidebar{transform:translateX(-100%);visibility:hidden;pointer-events:none}
-  .app-frame>.sidebar{transition:transform .2s ease,visibility .2s}
+  .app-frame:not(.sidebar-collapsed)>.sidebar{transform:translateX(0);visibility:visible}
+  .app-frame>.sidebar{transition:transform .22s ease,visibility .22s}
   .app-frame.sidebar-collapsed .brand{visibility:hidden}
+}
+@media(max-width:850px){
+  .app-frame{grid-template-columns:minmax(0,1fr)}
+  .sidebar{position:fixed;left:-270px;top:0;bottom:0;height:100dvh;width:252px;overflow-y:auto;visibility:visible;transform:none}
+  .sidebar.open{left:0;transform:translateX(270px)}
+  .sidebar-collapsed>.sidebar{visibility:visible}
 }
 @media(max-width:850px){
   .topbar-sidebar-toggle{display:none}
