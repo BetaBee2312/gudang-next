@@ -25,7 +25,7 @@ const titles: Record<string, string> = { "/barang": "Daftar Barang", "/stok-habi
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname(); const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null); const [ready, setReady] = useState(false); const [mobileOpen, setMobileOpen] = useState(false); const [desktopCollapsed, setDesktopCollapsed] = useState(true);
+  const [user, setUser] = useState<SessionUser | null>(null); const [ready, setReady] = useState(false); const [mobileOpen, setMobileOpen] = useState(false); const [desktopCollapsed, setDesktopCollapsed] = useState(true); const [desktopCollapsed, setDesktopCollapsed] = useState(true);
   useEffect(() => {
     let alive = true;
     fetch("/api/auth/me", { cache: "no-store" }).then(r => r.json()).then(data => {
