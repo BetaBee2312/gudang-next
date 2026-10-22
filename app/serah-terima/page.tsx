@@ -106,6 +106,9 @@ export default function SerahTerimaPage() {
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState(false);
   const [query, setQuery] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
   const [notice, setNotice] = useState("");
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
