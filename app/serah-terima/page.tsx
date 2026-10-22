@@ -689,7 +689,7 @@ export default function SerahTerimaPage() {
                       value={line.keperluan}
                       onChange={(event) =>
                         setLines((old) => old.map((current, lineIndex) =>
-                          lineIndex === index ? { ...current, keperluan: event.target.value, id_barang: "" } : current,
+                          lineIndex === index ? { ...current, keperluan: event.target.value } : current,
                         ))
                       }
                       placeholder="Contoh: YMC, BALON PROMINA, atau keperluan lain…"
