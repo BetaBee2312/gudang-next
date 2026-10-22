@@ -170,3 +170,9 @@
 .branch-pagination-controls{display:flex;align-items:center;gap:8px}
 .branch-page-number{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
 @media(max-width:520px){.branch-pagination{padding:12px;align-items:stretch}.branch-pagination-controls{width:100%;justify-content:space-between;gap:6px}.branch-pagination-controls .btn{flex:1}.branch-page-number{align-self:center;font-size:11px}}
+
+/* Handover month filter and pagination */
+.handover-month-filter{width:min(220px,100%);margin:0}
+.handover-month-filter .select-field{width:100%}
+.handover-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 4px 4px;border-top:1px solid #e2e8f0}
+@media(max-width:520px){.handover-month-filter{width:100%}.handover-pagination{align-items:stretch}.handover-pagination>span{line-height:1.5}.handover-pagination>div{width:100%;justify-content:space-between;gap:6px}.handover-pagination .btn{flex:1;min-height:40px}.handover-pagination>div>span{align-self:center;font-size:11px}}

@@ -42,6 +42,9 @@ type SearchOption<T extends string> = { value: T; label: string; searchText?: st
 
 function MultiSearchSelect<T extends string>({ values, onChange, options, placeholder }: { values: T[]; onChange: (values: T[]) => void; options: SearchOption<T>[]; placeholder: string }) {
   const [query, setQuery] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
   const [open, setOpen] = useState(false);
   const selected = options.filter((option) => values.includes(option.value));
   const filtered = options.filter((option) => !values.includes(option.value) && `${option.label} ${option.searchText ?? ""} ${option.hint ?? ""}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 20);
@@ -169,20 +172,44 @@ export default function SerahTerimaPage() {
   }, [items]);
 
   // Jika pencarian cocok dengan satu item, tampilkan seluruh dokumen/kelompoknya.
+  const monthOptions = useMemo(() => {
+    const keys = new Set(
+      groups
+        .map((group) => String(group.head.tanggal ?? "").slice(0, 7))
+        .filter((value) => /^\d{4}-\d{2}$/.test(value)),
+    );
+    return Array.from(keys)
+      .sort((a, b) => b.localeCompare(a))
+      .map((key) => ({
+        value: key,
+        label: new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" })
+          .format(new Date(`${key}-15T12:00:00`)),
+      }));
+  }, [groups]);
+
   const filteredGroups = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return groups;
-
-    return groups.filter((group) =>
-      `${group.key} ${group.rows
+    return groups.filter((group) => {
+      const monthKey = String(group.head.tanggal ?? "").slice(0, 7);
+      if (selectedMonth !== "all" && monthKey !== selectedMonth) return false;
+      if (!normalizedQuery) return true;
+      const searchableText = `${group.key} ${group.rows
         .map((item) =>
-          `${item.id} ${item.nama}${item.jabatan} ${item.tujuan}${item.keperluan} ${item.jumlah}${item.cabang}`,
+          `${item.id} ${item.nama} ${item.jabatan} ${item.tujuan} ${item.keperluan} ${item.jumlah} ${item.cabang}`,
         )
-        .join(" ")}`
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [groups, query]);
+        .join(" ")}`.toLowerCase();
+      return searchableText.includes(normalizedQuery);
+    });
+  }, [groups, query, selectedMonth]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredGroups.length / pageSize));
+  const pageGroups = useMemo(
+    () => filteredGroups.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filteredGroups, currentPage],
+  );
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   const totalLines = items.length;
   const uniqueRecipients = new Set(groups.map((group) => group.head.nama)).size;
@@ -458,8 +485,21 @@ export default function SerahTerimaPage() {
             <input
               placeholder="Cari ID dokumen, penerima, tujuan, item, atau cabang…"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => { setQuery(event.target.value); setCurrentPage(1); }}
             />
+          </label>
+          <label className="form-group handover-month-filter">
+            <span className="form-label">Filter bulan</span>
+            <select
+              className="select-field"
+              value={selectedMonth}
+              onChange={(event) => { setSelectedMonth(event.target.value); setCurrentPage(1); }}
+            >
+              <option value="all">Semua bulan</option>
+              {monthOptions.map((month) => (
+                <option key={month.value} value={month.value}>{month.label}</option>
+              ))}
+            </select>
           </label>
         </div>
         
@@ -469,10 +509,10 @@ export default function SerahTerimaPage() {
             <div className="p-8 text-center text-slate-500">Memuat data…</div>
           ) : filteredGroups.length === 0 ? (
             <div className="p-8 text-center text-slate-500 bg-white border border-slate-200 rounded-xl shadow-sm">
-              Belum ada dokumen serah-terima.
+              Tidak ada dokumen pada filter yang dipilih.
             </div>
           ) : (
-            filteredGroups.map((group) => {
+            pageGroups.map((group) => {
               const isExpanded = expandedGroups.has(group.key);
               // Jika item lebih dari 3, sembunyikan sisanya saat tidak di-expand
               const showExpandButton = group.rows.length > 3;
@@ -590,6 +630,18 @@ export default function SerahTerimaPage() {
                 </div>
               );
             })
+          )}
+          {!loading && filteredGroups.length > 0 && (
+            <div className="handover-pagination">
+              <span className="text-xs text-slate-500">
+                Menampilkan {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredGroups.length)} dari {filteredGroups.length} dokumen
+              </span>
+              <div className="flex items-center gap-2">
+                <button type="button" className="btn btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>Sebelumnya</button>
+                <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Halaman {currentPage} / {totalPages}</span>
+                <button type="button" className="btn btn-sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>Berikutnya</button>
+              </div>
+            </div>
           )}
         </div>
         {/* Selesai desain card baru */}
