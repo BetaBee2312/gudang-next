@@ -404,6 +404,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
           </div>
         </div>
       ) : (
+        <>
         <div className="product-grid pb-16 md:pb-0"> {/* Tambah padding bawah khusus di mobile agar tidak terhalang bottom nav */}
           {pageItems.map((item) => (
             <article className="product-card" key={item.id_barang}>
@@ -479,6 +480,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
             </div>
           </div>
         )}
+        </>
       )}
 
       {/* MODAL BOTTOM NAVBAR UNTUK MOBILE - Akan melayang dari bawah saat item dicentang di HP */}
