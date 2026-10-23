@@ -427,7 +427,7 @@ export default function SerahTerimaPage() {
       doc.setFont("helvetica", "bold");
       doc.text(String(sessionName || "ADMIN MARKETING").toUpperCase(), left, signY + 27);
       doc.setFont("helvetica", "normal");
-      doc.text("ADM.MARKETING", tableLeft, signY + 33);
+      doc.text("ADM.MARKETING", left, signY + 33);
 
       const safeName = `${group.key}-${item.tujuan}-${dateText}`
         .replace(/[^a-zA-Z0-9 -]/g, "")
