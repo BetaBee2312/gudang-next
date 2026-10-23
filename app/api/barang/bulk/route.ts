@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         !Number.isInteger(qtyCurrent) || qtyCurrent < 0) {
       return fail(`Data barang ${id || "tanpa ID"} tidak valid.`);
     }
-    if (expired && !/^\\d{4}-\\d{2}-\\d{2}$/.test(expired)) {
+    if (expired && !/^\d{4}-\d{2}-\d{2}$/.test(expired)) {
       return fail(`Tanggal expired barang ${id} tidak valid.`);
     }
 
