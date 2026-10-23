@@ -28,6 +28,7 @@ export async function PATCH(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
   let savedPath: string | null = null;
+  let previousPhoto: string | null = null;
   try {
     const form = await request.formData();
     const nik = String(form.get("no_karyawan") ?? "").trim();
@@ -86,7 +87,7 @@ export async function PATCH(request: NextRequest) {
         const [duplicate] = await conn.execute<DBRow[]>("SELECT no_karyawan FROM tb_akun WHERE no_karyawan = ? LIMIT 1", [nik]);
         if (duplicate.length) throw new Error("NIK tersebut sudah digunakan akun lain.");
       }
-      const oldPhoto = current[0].profilepic ? String(current[0].profilepic) : null;
+      previousPhoto = current[0].profilepic ? String(current[0].profilepic) : null;
       const updates = ["nama = ?"];
       const values: any[] = [nama];
       if (nikChanged) { updates.push("no_karyawan = ?"); values.push(nik); }
@@ -95,12 +96,12 @@ export async function PATCH(request: NextRequest) {
       values.push(user.no_karyawan);
       await conn.execute(`UPDATE tb_akun SET ${updates.join(", ")} WHERE no_karyawan = ?`, values);
       await conn.commit();
-      if (photoName && oldPhoto && oldPhoto !== photoName) await removeProfileIfUnused(oldPhoto, nik);
     } catch (error) {
       await conn.rollback();
       throw error;
     } finally { conn.release(); }
 
+    if (photoName && previousPhoto && previousPhoto !== photoName) await removeProfileIfUnused(previousPhoto, nik);
     const response = NextResponse.json({ success: true, nikChanged, user: { no_karyawan: nik, nama, profilepic: photoName }, message: "Profil berhasil diperbarui." });
     if (nikChanged) response.cookies.set("gudang_session", "", { httpOnly: true, path: "/", maxAge: 0, sameSite: "lax" });
     return response;
