@@ -106,7 +106,9 @@ export async function POST(request: NextRequest) {
         [id, image, nama, kategori, expiredRaw || null, qtyAwal, qtyAwal, bulan, plu],
       );
     } catch (error) {
-      if (image) await removeImageIfUnused(image);
+      if (image) {
+        try { await unlink(path.join(uploadDir(), path.basename(image))); } catch { /* Clean up best-effort after failed insert. */ }
+      }
       throw error;
     }
     return NextResponse.json({ success: true, message: "Barang berhasil ditambahkan.", id_barang: id }, { status: 201 });
