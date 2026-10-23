@@ -135,12 +135,13 @@ export async function GET(request: NextRequest) {
               .jpeg({ quality: 32, mozjpeg: true, progressive: true, chromaSubsampling: "4:2:0" })
               .toBuffer();
 
-            const imageId = wb.addImage({ buffer: compressed, extension: "jpeg" });
+            const imageId = wb.addImage({ buffer: compressed as unknown as Buffer, extension: "jpeg" });
             // Fixed thumbnail inside column C. oneCell anchoring makes it move with its row when rows are deleted.
-            ws.addImage(imageId, {
+            ws.addImage(imageId, ({
               tl: { col: 2.12, row: row.number - 0.9 },
               br: { col: 2.88, row: row.number - 0.1 },
               editAs: "twoCell",
+            }) as Parameters<typeof ws.addImage>[1]);
             });
           }
         } catch {
