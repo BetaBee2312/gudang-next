@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { unlink } from "node:fs/promises";
+import path from "node:path";
 import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { requireUser, isResponse, fail } from "@/lib/http";
 
@@ -62,10 +64,29 @@ export async function DELETE(request: NextRequest) {
   if (isResponse(user)) return user;
   if (user.kategori.toLowerCase() !== "creator") return fail("Hanya Creator yang boleh menghapus akun.", 403);
   try {
-    const b = await request.json(); const ids: string[] = Array.isArray(b.ids) ? b.ids.map((v: unknown) => String(v)) : [String(b.no_karyawan ?? "")];
-    const safe = ids.filter(v => v.trim() && v !== user.no_karyawan);
+    const b = await request.json();
+    const ids: string[] = Array.isArray(b.ids) ? b.ids.map((v: unknown) => String(v).trim()) : [String(b.no_karyawan ?? "").trim()];
+    const safe = [...new Set(ids.filter(v => v && v !== user.no_karyawan))];
     if (!safe.length) return fail("Pilih akun lain yang ingin dihapus. Akun yang sedang dipakai tidak dapat dihapus.");
+
+    const [accounts] = await db.execute<DBRow[]>(
+      `SELECT no_karyawan, profilepic FROM tb_akun WHERE no_karyawan IN (${safe.map(() => "?").join(",")})`,
+      safe,
+    );
     await db.execute(`DELETE FROM tb_akun WHERE no_karyawan IN (${safe.map(() => "?").join(",")})`, safe);
-    return NextResponse.json({ success: true, message: `${safe.length} akun dihapus.` });
+
+    const profileDir = path.join(process.cwd(), "public", "profile");
+    for (const account of accounts) {
+      if (!account.profilepic) continue;
+      const filename = path.basename(String(account.profilepic));
+      const [remaining] = await db.execute<DBRow[]>(
+        "SELECT COUNT(*) AS count FROM tb_akun WHERE profilepic = ?",
+        [filename],
+      );
+      if (Number(remaining[0]?.count ?? 0) === 0) {
+        try { await unlink(path.join(profileDir, filename)); } catch { /* Missing image is already cleaned up. */ }
+      }
+    }
+    return NextResponse.json({ success: true, message: `${accounts.length} akun dihapus.` });
   } catch (error) { return fail(databaseErrorMessage(error), 500); }
 }
