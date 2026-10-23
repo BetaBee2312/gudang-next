@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
         "qty_terkini = ?",
         "plu = ?",
       ];
-      const values: unknown[] = [
+      const values: any[] = [
         item.name,
         item.category,
         item.expired,

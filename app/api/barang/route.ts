@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const category = request.nextUrl.searchParams.get("kategori") ?? "";
     const habis = request.nextUrl.searchParams.get("habis") === "1";
     const where: string[] = [];
-    const params: unknown[] = [];
+    const params: any[] = [];
     if (search) { where.push("(nama_barang LIKE ? OR id_barang LIKE ? OR plu LIKE ?)"); params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
     if (category) { where.push("kategori = ?"); params.push(category); }
     if (habis) where.push("qty_terkini <= 0"); else where.push("qty_terkini > 0");

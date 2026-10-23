@@ -47,7 +47,7 @@ export async function PATCH(request: NextRequest) {
         if (duplicate.length) throw new Error("NIK tersebut sudah digunakan akun lain.");
       }
       const updates = ["nama = ?"];
-      const values: unknown[] = [nama];
+      const values: any[] = [nama];
       if (nikChanged) { updates.push("no_karyawan = ?"); values.push(nik); }
       if (password) { updates.push("password = ?"); values.push(await bcrypt.hash(password, 12)); }
       if (photoName) { updates.push("profilepic = ?"); values.push(photoName); }

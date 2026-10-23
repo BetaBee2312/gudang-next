@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
       dc: String(row.dc_support ?? "").trim(),
       cluster: String(row.cluster ?? "").trim(),
     }));
-    if (normalized.some(row => !row.kode || !row.nama)) return fail("Setiap cabang wajib memiliki kode_cabang dan nama_cabang.");
-    if (new Set(normalized.map(row => row.kode)).size !== normalized.length) return fail("Ada kode cabang duplikat dalam data yang dikirim.");
+    if (normalized.some((row: { kode: string; nama: string; singkatan: string; dc: string; cluster: string }) => !row.kode || !row.nama)) return fail("Setiap cabang wajib memiliki kode_cabang dan nama_cabang.");
+    if (new Set(normalized.map((row: { kode: string }) => row.kode)).size !== normalized.length) return fail("Ada kode cabang duplikat dalam data yang dikirim.");
     const conn = await db.getConnection();
     try {
       await conn.beginTransaction();

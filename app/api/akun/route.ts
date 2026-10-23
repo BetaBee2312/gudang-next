@@ -41,7 +41,7 @@ export async function PATCH(request: NextRequest) {
     const name = String(b.nama ?? "").trim();
     if (Object.hasOwn(b, "nama") && !name) return fail("Nama wajib diisi.");
     if (name.length > 150) return fail("Nama maksimal 150 karakter.");
-    const updates: string[] = []; const values: unknown[] = [];
+    const updates: string[] = []; const values: any[] = [];
     if (Object.hasOwn(b, "nama")) { updates.push("nama = ?"); values.push(name); }
     if (Object.hasOwn(b, "jabatan") && admin) { updates.push("jabatan = ?"); values.push(String(b.jabatan).trim()); }
     if (Object.hasOwn(b, "division") && admin) { updates.push("division = ?"); values.push(String(b.division).trim()); }

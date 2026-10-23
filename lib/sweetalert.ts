@@ -28,16 +28,17 @@ export function confirmAction(
   text?: string,
   options: Partial<SweetAlertOptions> = {},
 ) {
-  return Swal.fire({
+  const mergedOptions = {
     ...baseOptions,
     title,
     text,
-    icon: "warning",
+    icon: "warning" as const,
     showCancelButton: true,
     confirmButtonText: "Ya, lanjutkan",
     cancelButtonText: "Batal",
     confirmButtonColor: "#334155",
     reverseButtons: true,
     ...options,
-  }).then((result) => result.isConfirmed);
+  } as SweetAlertOptions;
+  return Swal.fire(mergedOptions).then((result) => result.isConfirmed);
 }
