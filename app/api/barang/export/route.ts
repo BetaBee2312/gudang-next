@@ -135,13 +135,17 @@ export async function GET(request: NextRequest) {
               .jpeg({ quality: 32, mozjpeg: true, progressive: true, chromaSubsampling: "4:2:0" })
               .toBuffer();
 
-            const imageId = wb.addImage({ buffer: Buffer.from(compressed) as unknown as import("exceljs").ImageBuffer, extension: "jpeg" });
-            // Fixed thumbnail inside column C. oneCell anchoring makes it move with its row when rows are deleted.
-            ws.addImage(imageId, ({
-              tl: { col: 2.12, row: row.number - 0.9 },
-              br: { col: 2.88, row: row.number - 0.1 },
-              editAs: "twoCell",
-            }) as Parameters<typeof ws.addImage>[1]);
+            const imageId = wb.addImage({ buffer: Buffer.from(compressed) as unknown as Buffer, extension: "jpeg" });
+            // Fit the image within the cell without stretching its original aspect ratio.
+            const metadata = await sharp(compressed).metadata();
+            const imageWidth = metadata.width ?? 150;
+            const imageHeight = metadata.height ?? 100;
+            const scale = Math.min(72 / imageWidth, 44 / imageHeight);
+            ws.addImage(imageId, {
+              tl: { col: 2.12, row: row.number - 0.86 },
+              ext: { width: imageWidth * scale, height: imageHeight * scale },
+              editAs: "oneCell",
+            });
           }
         } catch {
           // Continue export if an old image is missing or cannot be decoded.
