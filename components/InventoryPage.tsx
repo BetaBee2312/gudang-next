@@ -326,7 +326,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         <div>
           <div className="eyebrow">Inventori & kontrol stok</div>
           <h1>{title}</h1>
-    </div>
+        </div>
         <div className="heading-actions">
           {!habis && admin && (
             <>
