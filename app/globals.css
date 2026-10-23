@@ -474,3 +474,6 @@ thead th{padding:11px 14px}
     margin:8px auto!important;
   }
 }
+
+/* Show the entire product photo without cropping. */
+.product-image img{object-fit:contain;background:#f0f4f0}
