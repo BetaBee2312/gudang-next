@@ -381,7 +381,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         </select>
         
         {/* Tombol Aksi Massal hanya muncul di mode Desktop (md:flex) */}
-        {admin && !habis && (
+        {admin && (
           <label className="inventory-select-all">
             <input
               type="checkbox"
@@ -394,7 +394,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
             <span>Pilih Semua ({filtered.length})</span>
           </label>
         )}
-        {admin && !habis && selected.length > 0 && (
+        {admin && selected.length > 0 && (
           <div className="hidden md:flex gap-2">
             <button className="btn" onClick={openBulkEdit}>
               <Pencil size={15} /> Edit Massal ({selected.length})
@@ -450,7 +450,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         <div className="product-grid pb-16 md:pb-0"> {/* Tambah padding bawah khusus di mobile agar tidak terhalang bottom nav */}
           {pageItems.map((item) => (
             <article className="product-card" key={item.id_barang}>
-              {admin && !habis && (
+              {admin && (
                 <input
                   className="product-check"
                   type="checkbox"
@@ -508,7 +508,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
                 </div>
                 <div className="product-expired product-month">Update stok: {item.bulan || "-"}</div>
                 <div className="product-meta">
-                  {admin && !habis && (
+                  {admin && (
                     <button className="btn btn-sm" onClick={() => openEdit(item)} title="Edit barang">
                       <Pencil size={13} /> Edit
                     </button>
@@ -532,7 +532,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       )}
 
       {/* MODAL BOTTOM NAVBAR UNTUK MOBILE - Akan melayang dari bawah saat item dicentang di HP */}
-      {admin && !habis && selected.length > 0 && (
+      {admin && selected.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 flex justify-between items-center z-50 md:hidden shadow-[0_-8px_15px_-3px_rgba(0,0,0,0.1)]">
           <div className="text-sm font-semibold text-indigo-700">
             {selected.length} Terpilih
