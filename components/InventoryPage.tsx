@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import {
   Archive,
   Boxes,
@@ -429,9 +430,15 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
               )}
               <div className="product-image">
                 {item.gambar ? (
-                  <img
+                  <Image
                     src={`/gambar/${encodeURIComponent(item.gambar)}`}
                     alt={item.nama_barang}
+                    width={480}
+                    height={480}
+                    sizes="(max-width: 420px) 48vw, (max-width: 850px) 45vw, (max-width: 1280px) 30vw, 240px"
+                    loading="lazy"
+                    quality={55}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     onError={(e) => {
                       const image = e.currentTarget;
                       if (image.dataset.legacyFallback !== "1") {
