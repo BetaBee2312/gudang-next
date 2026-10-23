@@ -430,7 +430,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
               <div className="product-image">
                 {item.gambar ? (
                   <img
-                    src={`/gambar/${encodeURIComponent(item.gambar)}`}
+                    src={`/image/${encodeURIComponent(item.gambar)}`}
                     alt={item.nama_barang}
                     loading="lazy"
                     decoding="async"
@@ -441,7 +441,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
                       const image = e.currentTarget;
                       if (image.dataset.legacyFallback !== "1") {
                         image.dataset.legacyFallback = "1";
-                        image.src = `/image/${encodeURIComponent(item.gambar ?? "")}`;
+                        image.style.display = "none";
                       } else {
                         image.style.display = "none";
                       }
