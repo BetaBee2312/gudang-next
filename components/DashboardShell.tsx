@@ -23,17 +23,38 @@ const nav = [
 ];
 const titles: Record<string, string> = { "/barang": "Daftar Barang", "/stok-habis": "Stok Habis / MD", "/alokasi": "Alokasi Barang", "/serah-terima": "Serah Terima", "/cabang": "Daftar Cabang", "/akun": "Akun Terdaftar", "/chat-ai": "Gudang Marketing AI", "/profil": "Profil Saya" };
 
+let cachedSession: { user: SessionUser; savedAt: number } | null = null;
+const SESSION_CACHE_MS = 60_000;
+
+function getCachedSession() {
+  if (!cachedSession || Date.now() - cachedSession.savedAt > SESSION_CACHE_MS) return null;
+  return cachedSession.user;
+}
+
+
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname(); const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null); const [ready, setReady] = useState(false); const [mobileOpen, setMobileOpen] = useState(false); const [desktopCollapsed, setDesktopCollapsed] = useState(true);
+  const [user, setUser] = useState<SessionUser | null>(() => getCachedSession()); const [ready, setReady] = useState(() => getCachedSession() !== null); const [mobileOpen, setMobileOpen] = useState(false); const [desktopCollapsed, setDesktopCollapsed] = useState(true);
   useEffect(() => {
     let alive = true;
+    // Cached session is only for faster navigation UI. API routes still validate every request.
     fetch("/api/auth/me", { cache: "no-store" }).then(r => r.json()).then(data => {
       if (!alive) return;
-      if (!data.user) { router.replace("/login"); return; }
-      setUser(data.user); setReady(true);
-    }).catch(() => router.replace("/login"));
+      if (!data.user) {
+        cachedSession = null;
+        setUser(null);
+        setReady(false);
+        router.replace("/login");
+        return;
+      }
+      cachedSession = { user: data.user, savedAt: Date.now() };
+      setUser(data.user);
+      setReady(true);
+    }).catch(() => {
+      if (!alive) return;
+      if (!getCachedSession()) router.replace("/login");
+    });
     return () => { alive = false; };
   }, [router]);
   useEffect(() => { setMobileOpen(false); }, [pathname]);
@@ -57,7 +78,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   useEffect(() => {
     if (user && user.division.toLowerCase() === "md" && !["/barang", "/profil"].includes(pathname)) router.replace("/barang");
   }, [user, pathname, router]);
-  async function logout() { await fetch("/api/auth/logout", { method: "POST" }); router.replace("/login"); router.refresh(); }
+  async function logout() { cachedSession = null; await fetch("/api/auth/logout", { method: "POST" }); router.replace("/login"); router.refresh(); }
   if (!ready || !user) return <div className="min-h-screen grid place-items-center"><div className="text-sm text-slate-500">Memuat ruang kerja…</div></div>;
   const admin = ["admin", "creator"].includes(user.kategori.toLowerCase());
   const isMD = user.division.trim().toLowerCase() === "md";
