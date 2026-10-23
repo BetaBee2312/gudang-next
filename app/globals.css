@@ -443,3 +443,34 @@ thead th{padding:11px 14px}
   .profile-form .flex.justify-end{margin-top:12px!important}
   .profile-form .flex.justify-end .btn{width:100%;min-height:44px}
 }
+
+
+/* Fix bulk-edit scroll: keep heading/footer fixed and scroll only the item list */
+.bulk-edit-modal{
+  height:min(92dvh, 900px)!important;
+  max-height:calc(100dvh - 24px)!important;
+  min-height:0;
+}
+.bulk-edit-modal .bulk-edit-body{
+  flex:1 1 0!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.bulk-edit-modal .bulk-edit-cards{
+  overflow:visible!important;
+  min-height:min-content;
+}
+.bulk-edit-modal .modal-foot{
+  flex-shrink:0!important;
+}
+@media(max-width:850px){
+  .bulk-edit-modal{
+    height:calc(100dvh - 16px)!important;
+    max-height:calc(100dvh - 16px)!important;
+    width:calc(100vw - 16px)!important;
+    margin:8px auto!important;
+  }
+}
