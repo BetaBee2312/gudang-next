@@ -255,3 +255,16 @@
 .inventory-pagination-controls{display:flex;align-items:center;gap:8px}
 .inventory-page-number{font-size:12px;font-weight:600;color:#64748b;white-space:nowrap}
 @media(max-width:520px){.inventory-pagination{align-items:stretch}.inventory-pagination-controls{width:100%;justify-content:space-between;gap:6px}.inventory-pagination-controls .btn{flex:1;min-height:40px}.inventory-page-number{align-self:center;font-size:11px}}
+
+/* SweetAlert2 visual system shared by all pages */
+.swal2-container{z-index:20000!important}
+.swal2-popup.app-swal-popup{border-radius:18px;padding:1.35rem;box-shadow:0 24px 80px rgba(15,23,42,.20);font-family:'DM Sans',sans-serif;color:#253244}
+.app-swal-title{font-family:Manrope,sans-serif;font-size:1.2rem;font-weight:800;letter-spacing:-.025em}
+.swal2-html-container{font-size:.88rem;line-height:1.6}
+.swal2-actions{gap:8px}
+.app-swal-confirm,.app-swal-cancel,.app-swal-deny{border-radius:10px!important;padding:.68rem 1rem!important;font-size:.82rem!important;font-weight:700!important;box-shadow:none!important}
+.app-swal-confirm{background:#334155!important}
+.app-swal-cancel{background:#f1f5f9!important;color:#334155!important}
+.app-swal-deny{background:#b91c1c!important}
+.swal2-validation-message{border-radius:9px;font-size:.8rem}
+@media(max-width:520px){.swal2-popup.app-swal-popup{width:calc(100vw - 28px);padding:1.15rem;border-radius:16px}.app-swal-title{font-size:1.08rem}.swal2-actions{width:100%;flex-direction:column-reverse}.swal2-actions button{width:100%;margin:0!important}}
