@@ -121,7 +121,6 @@ export async function POST(request: NextRequest) {
 
     conn = await db.getConnection();
     await conn.beginTransaction();
-    const month = new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date());
 
     const [existingRows] = await conn.execute<DBRow[]>(
       `SELECT id_barang, gambar FROM tb_barang_gc WHERE id_barang IN (${ids.map(() => "?").join(",")}) FOR UPDATE`,
@@ -141,7 +140,6 @@ export async function POST(request: NextRequest) {
         "expired = ?",
         "qty_awal = ?",
         "qty_terkini = ?",
-        "bulan = ?",
         "plu = ?",
       ];
       const values: unknown[] = [
@@ -150,7 +148,6 @@ export async function POST(request: NextRequest) {
         item.expired,
         item.qtyInitial,
         item.qtyCurrent,
-        month,
         item.plu,
       ];
 
