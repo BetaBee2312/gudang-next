@@ -79,12 +79,16 @@ export async function DELETE(request: NextRequest) {
     for (const account of accounts) {
       if (!account.profilepic) continue;
       const filename = path.basename(String(account.profilepic));
-      const [remaining] = await db.execute<DBRow[]>(
-        "SELECT COUNT(*) AS count FROM tb_akun WHERE profilepic = ?",
-        [filename],
-      );
-      if (Number(remaining[0]?.count ?? 0) === 0) {
-        try { await unlink(path.join(profileDir, filename)); } catch { /* Missing image is already cleaned up. */ }
+      try {
+        const [remaining] = await db.execute<DBRow[]>(
+          "SELECT COUNT(*) AS count FROM tb_akun WHERE profilepic = ?",
+          [filename],
+        );
+        if (Number(remaining[0]?.count ?? 0) === 0) {
+          await unlink(path.join(profileDir, filename));
+        }
+      } catch {
+        // If reference checking fails, preserve the file rather than risk deleting a shared photo.
       }
     }
     return NextResponse.json({ success: true, message: `${accounts.length} akun dihapus.` });
