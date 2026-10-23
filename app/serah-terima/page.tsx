@@ -349,10 +349,6 @@ export default function SerahTerimaPage() {
       const pageHeight = doc.internal.pageSize.getHeight();
       const left = 14;
       const right = pageWidth - 14;
-      // Lebar blok tabel dibuat lebih proporsional dan dipusatkan pada kertas A4 landscape.
-      const tableWidth = 220;
-      const tableLeft = (pageWidth - tableWidth) / 2;
-      const tableRight = tableLeft + tableWidth;
 
       // Logo YOMART berasal dari public/image, tidak disalin ke folder upload barang.
       try {
@@ -393,8 +389,7 @@ export default function SerahTerimaPage() {
         head: [["Item", "Qty", "Keterangan"]],
         body,
         theme: "grid",
-        margin: { left: tableLeft, right: pageWidth - tableRight, bottom: 12 },
-        tableWidth: tableWidth,
+        margin: { left, right: 14, bottom: 12 },
         styles: {
           font: "helvetica",
           fontSize: 9.5,
@@ -412,7 +407,7 @@ export default function SerahTerimaPage() {
           halign: "center",
         },
         columnStyles: {
-          0: { cellWidth: 55 },
+          0: { cellWidth: 60 },
           1: { cellWidth: 18, halign: "center" },
           2: { cellWidth: "auto" },
         },
@@ -427,10 +422,10 @@ export default function SerahTerimaPage() {
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.text("MENYERAHKAN", tableLeft, signY);
-      doc.text("MENERIMA", tableRight - 35, signY);
+      doc.text("MENYERAHKAN", left, signY);
+      doc.text("MENERIMA", right - 35, signY);
       doc.setFont("helvetica", "bold");
-      doc.text(String(sessionName || "ADMIN MARKETING").toUpperCase(), tableLeft, signY + 27);
+      doc.text(String(sessionName || "ADMIN MARKETING").toUpperCase(), left, signY + 27);
       doc.setFont("helvetica", "normal");
       doc.text("ADM.MARKETING", tableLeft, signY + 33);
 
