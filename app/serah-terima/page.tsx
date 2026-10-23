@@ -428,7 +428,7 @@ export default function SerahTerimaPage() {
 
       const safeName = `${group.key}-${item.tujuan}-${dateText}`
         .replace(/[^a-zA-Z0-9 -]/g, "")
-        .replace(/\\s+/g, "-");
+        .replace(/\s+/g, "-");
       doc.save(`Serah-Terima-${safeName}.pdf`);
     } catch (error) {
       setNotice("");
