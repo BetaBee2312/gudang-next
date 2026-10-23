@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
               .jpeg({ quality: 32, mozjpeg: true, progressive: true, chromaSubsampling: "4:2:0" })
               .toBuffer();
 
-            const imageId = wb.addImage({ buffer: new Uint8Array(compressed), extension: "jpeg" });
+            const imageId = wb.addImage({ buffer: Buffer.from(compressed) as unknown as import("exceljs").ImageBuffer, extension: "jpeg" });
             // Fixed thumbnail inside column C. oneCell anchoring makes it move with its row when rows are deleted.
             ws.addImage(imageId, ({
               tl: { col: 2.12, row: row.number - 0.9 },
