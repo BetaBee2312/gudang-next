@@ -114,7 +114,6 @@ export async function GET(request: NextRequest) {
         try {
           const filename = path.basename(String(item.gambar));
           const imagePaths = [
-            path.join(process.cwd(), "public", "gambar", filename),
             path.join(process.cwd(), "public", "image", filename),
             path.join(process.cwd(), "public", filename),
           ];
