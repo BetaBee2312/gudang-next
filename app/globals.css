@@ -324,6 +324,7 @@ thead th{padding:11px 14px}
 .login-screen-card{
   min-height:100svh;
   display:grid;
+  grid-template-columns:minmax(0,1fr);
   place-items:center;
   padding:clamp(18px,4vw,48px);
   background:#f0f2f0;
