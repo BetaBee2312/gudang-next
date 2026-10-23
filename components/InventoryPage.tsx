@@ -17,7 +17,7 @@ import {
   Save,
 } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
-import { requestJSON, shortDate, toDateInput } from "@/lib/client";
+import { requestJSON, shortDate, toDateInput, getInventoryCache, setInventoryCache, invalidateInventoryCache } from "@/lib/client";
 import Swal from "sweetalert2";
 import { notify } from "@/lib/sweetalert";
 
@@ -66,8 +66,9 @@ function expiryStatus(value?: string | null): "expired" | "soon" | "safe" | "unk
 
 
 export default function InventoryPage({ habis = false }: { habis?: boolean }) {
-  const [items, setItems] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `barang:${habis ? "habis" : "tersedia"}`;
+  const [items, setItems] = useState<Product[]>(() => getInventoryCache<Product[]>(cacheKey) ?? []);
+  const [loading, setLoading] = useState(() => getInventoryCache<Product[]>(cacheKey) === null);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
 
@@ -90,12 +91,19 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
 
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
 
-  async function load() {
-    setLoading(true);
+  async function load(options: { force?: boolean } = {}) {
+    const cached = getInventoryCache<Product[]>(cacheKey);
+    if (cached && !options.force) {
+      setItems(cached);
+      setLoading(false);
+      return;
+    }
+    if (!items.length) setLoading(true);
     setError("");
     try {
       const data = await requestJSON<{ data: Product[] }>(`/api/barang?habis=${habis ? 1 : 0}`);
       setItems(data.data);
+      setInventoryCache(cacheKey, data.data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal memuat barang.");
     } finally {
@@ -185,7 +193,8 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       setModal(false);
       setToast("");
       await notify(editing ? "Barang diperbarui" : "Barang berhasil ditambahkan", "success");
-      await load();
+      invalidateInventoryCache();
+      await load({ force: true });
     } catch (e) {
       setToast("");
       await notify("Gagal menyimpan barang", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
@@ -218,7 +227,8 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       setSelected([]);
       setToast("");
       await notify("Barang terpilih berhasil dihapus", "success");
-      await load();
+      invalidateInventoryCache();
+      await load({ force: true });
     } catch (e) {
       setToast("");
       await notify("Gagal menghapus barang", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
@@ -309,7 +319,8 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       });
       setToast("");
       await notify("Stok berhasil diperbarui", "success", data.message);
-      await load();
+      invalidateInventoryCache();
+      await load({ force: true });
     } catch (e) {
       setToast("");
       await notify("Renew stok gagal", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
