@@ -10,12 +10,12 @@ import { requireUser, isResponse, fail } from "@/lib/http";
 export const runtime = "nodejs";
 const PREFIX: Record<string, string> = { Marketing: "MKT", MD: "MD", "Marketing-D53": "MKT-D53", "MD-D53": "MD-D53", "Marketing-DGBG": "MKT-GBG", "MD-DGBG": "MD-GBG" };
 const uploadDir = () => path.join(process.cwd(), "public", "image");
-const MAX_UPLOAD = 5 * 1024 * 1024;
+const MAX_UPLOAD = 20 * 1024 * 1024;
 const TARGET_IMAGE = 900 * 1024;
 
 async function saveImage(value: FormDataEntryValue | null): Promise<string | null> {
   if (!(value instanceof File) || value.size === 0) return null;
-  if (value.size > MAX_UPLOAD) throw new Error("Ukuran gambar maksimal 5 MB.");
+  if (value.size > MAX_UPLOAD) throw new Error("Ukuran gambar maksimal 20 MB sebelum kompresi.");
   const ext = path.extname(value.name).toLowerCase();
   if (![".jpg", ".jpeg", ".png", ".webp"].includes(ext)) throw new Error("Format gambar harus JPG, PNG, atau WebP.");
   let input = Buffer.from(await value.arrayBuffer());
