@@ -326,12 +326,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         <div>
           <div className="eyebrow">Inventori & kontrol stok</div>
           <h1>{title}</h1>
-          <p>
-            {habis
-              ? "Pantau barang yang stoknya sudah habis agar kebutuhan distribusi tidak terlewat."
-              : "Kelola stok barang marketing, masa kedaluwarsa, PLU, dan histori rollover bulanan."}
-          </p>
-        </div>
+    </div>
         <div className="heading-actions">
           {!habis && admin && (
             <>
