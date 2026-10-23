@@ -10,7 +10,7 @@ import { requireUser, isResponse, fail } from "@/lib/http";
 export const runtime = "nodejs";
 
 const profileDir = () => path.join(process.cwd(), "public", "profile");
-const MAX_UPLOAD = 5 * 1024 * 1024;
+const MAX_UPLOAD = 20 * 1024 * 1024;
 const TARGET_IMAGE = 900 * 1024;
 
 async function removeProfileIfUnused(filename: unknown, currentNik: string) {
@@ -39,7 +39,7 @@ export async function PATCH(request: NextRequest) {
     if (nik.length > 64 || nama.length > 150) return fail("NIK maksimal 64 karakter dan nama maksimal 150 karakter.");
     if (password && password.length < 6) return fail("Password minimal 6 karakter.");
     if (photo && !(photo instanceof File)) return fail("File foto tidak valid.");
-    if (photo instanceof File && photo.size > MAX_UPLOAD) return fail("Ukuran foto maksimal 5 MB.");
+    if (photo instanceof File && photo.size > MAX_UPLOAD) return fail("Ukuran foto maksimal 20 MB sebelum kompresi.");
 
     let photoName: string | null = null;
     if (photo instanceof File && photo.size > 0) {
