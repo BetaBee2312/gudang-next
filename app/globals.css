@@ -268,3 +268,7 @@
 .app-swal-deny{background:#b91c1c!important}
 .swal2-validation-message{border-radius:9px;font-size:.8rem}
 @media(max-width:520px){.swal2-popup.app-swal-popup{width:calc(100vw - 28px);padding:1.15rem;border-radius:16px}.app-swal-title{font-size:1.08rem}.swal2-actions{width:100%;flex-direction:column-reverse}.swal2-actions button{width:100%;margin:0!important}}
+
+.inventory-select-all{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 11px;border:1px solid #dce2e8;border-radius:10px;background:#fff;color:#334155;font-size:12px;font-weight:700;white-space:nowrap}
+.inventory-select-all input{width:16px;height:16px;accent-color:#334155}
+@media(max-width:520px){.inventory-select-all{flex:1;justify-content:flex-start;min-height:42px}}
