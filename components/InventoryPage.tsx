@@ -162,18 +162,16 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
     setToast("");
     try {
       if (editing) {
-        await requestJSON("/api/barang", {
-          method: "PATCH",
-          body: JSON.stringify({
-            id_barang: editing.id_barang,
-            nama_barang: form.nama_barang,
-            kategori: form.kategori,
-            expired: form.expired || null,
-            plu: form.plu || null,
-            qty_awal: Number(form.qty_awal),
-            qty_terkini: Number(form.qty_terkini),
-          }),
-        });
+        const data = new FormData();
+        data.set("id_barang", editing.id_barang);
+        data.set("nama_barang", form.nama_barang);
+        data.set("kategori", form.kategori);
+        data.set("expired", form.expired);
+        data.set("plu", form.plu);
+        data.set("qty_awal", form.qty_awal);
+        data.set("qty_terkini", form.qty_terkini);
+        if (image) data.set("gambar", image);
+        await requestJSON("/api/barang", { method: "PATCH", body: data });
       } else {
         const data = new FormData();
         data.set("nama_barang", form.nama_barang);
