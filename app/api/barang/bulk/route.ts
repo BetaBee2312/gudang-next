@@ -74,8 +74,14 @@ async function saveImage(value: FormDataEntryValue | null): Promise<string | nul
 
 async function removeImage(filename: unknown) {
   if (!filename) return;
+  const safeName = path.basename(String(filename));
+  const [rows] = await db.execute<DBRow[]>(
+    "SELECT COUNT(*) AS count FROM tb_barang_gc WHERE gambar = ?",
+    [safeName],
+  );
+  if (Number(rows[0]?.count ?? 0) > 0) return;
   try {
-    await unlink(path.join(uploadDir(), path.basename(String(filename))));
+    await unlink(path.join(uploadDir(), safeName));
   } catch {
     // Foto yang sudah tidak ada tidak menggagalkan proses.
   }
