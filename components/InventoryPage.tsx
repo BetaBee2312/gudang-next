@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
 import { requestJSON, shortDate, toDateInput } from "@/lib/client";
+import Swal from "sweetalert2";
+import { notify } from "@/lib/sweetalert";
 
 type Product = {
   id_barang: string;
