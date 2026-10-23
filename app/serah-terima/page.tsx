@@ -447,7 +447,6 @@ export default function SerahTerimaPage() {
     <DashboardShell>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">Dokumentasi perpindahan barang</div>
           <h1>Serah Terima</h1>
           <p>
             Catatan dikelompokkan menjadi satu dokumen berdasarkan ID induk di
