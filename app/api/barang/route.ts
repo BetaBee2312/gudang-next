@@ -172,6 +172,10 @@ export async function PATCH(request: NextRequest) {
       uploadedImage = await saveImage(imageValue);
       if (uploadedImage) fields.gambar = uploadedImage;
     }
+
+    // Set bulan to the current Indonesian month whenever an existing item is edited.
+    fields.bulan = new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date());
+
     const allowed = Object.keys(fields);
     if (!allowed.length) return fail("Tidak ada field yang diubah.");
     await db.execute(`UPDATE tb_barang_gc SET ${allowed.map(k => `${k} = ?`).join(", ")} WHERE id_barang = ?`, [...allowed.map(k => fields[k]), id]);
