@@ -16,12 +16,17 @@ const TARGET_IMAGE = 900 * 1024;
 async function removeProfileIfUnused(filename: unknown, currentNik: string) {
   if (!filename) return;
   const safeName = path.basename(String(filename));
-  const [rows] = await db.execute<DBRow[]>(
-    "SELECT COUNT(*) AS count FROM tb_akun WHERE profilepic = ? AND no_karyawan <> ?",
-    [safeName, currentNik],
-  );
-  if (Number(rows[0]?.count ?? 0) > 0) return;
-  try { await unlink(path.join(profileDir(), safeName)); } catch { /* Already missing. */ }
+  if (!safeName || safeName === "." || safeName === "..") return;
+  try {
+    const [rows] = await db.execute<DBRow[]>(
+      "SELECT COUNT(*) AS count FROM tb_akun WHERE profilepic = ? AND no_karyawan <> ?",
+      [safeName, currentNik],
+    );
+    if (Number(rows[0]?.count ?? 0) > 0) return;
+    await unlink(path.join(profileDir(), safeName));
+  } catch {
+    // Preserve the file if reference checking fails; a missing file is already cleaned up.
+  }
 }
 
 export async function PATCH(request: NextRequest) {
