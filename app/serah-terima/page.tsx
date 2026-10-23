@@ -512,7 +512,7 @@ export default function SerahTerimaPage() {
         </div>
         
         {/* Mulai desain card baru dengan fitur expand/meredup */}
-        <div className="flex flex-col gap-5 mt-4 p-4 md:p-6 bg-slate-50/50 rounded-b-xl">
+        <div className="handover-cards-list flex flex-col gap-5 mt-4 p-4 md:p-6 bg-slate-50/50 rounded-b-xl">
           {loading ? (
             <div className="p-8 text-center text-slate-500">Memuat data…</div>
           ) : filteredGroups.length === 0 ? (
@@ -527,10 +527,10 @@ export default function SerahTerimaPage() {
               const visibleRows = isExpanded || !showExpandButton ? group.rows : group.rows.slice(0, 3);
 
               return (
-                <div key={group.key} className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 transition-all hover:shadow-md">
+                <div key={group.key} className="handover-document-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 transition-all hover:shadow-md">
                   
                   {/* Header Card */}
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 gap-4 border-b border-slate-100 pb-4">
+                  <div className="handover-document-header flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 gap-4 border-b border-slate-100 pb-4">
                     <div>
                       <div className="text-lg font-bold text-slate-800">
                         {shortDate(group.head.tanggal)}
