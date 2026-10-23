@@ -119,8 +119,28 @@ export async function PATCH(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
   if (!isAdmin(user)) return fail("Hanya Admin atau Creator yang bisa mengedit barang.", 403);
+
+  let uploadedImage: string | null = null;
+  let databaseUpdated = false;
   try {
-    const body = await request.json();
+    let body: Record<string, any>;
+    let imageValue: FormDataEntryValue | null = null;
+    if (request.headers.get("content-type")?.includes("multipart/form-data")) {
+      const form = await request.formData();
+      body = {
+        id_barang: form.get("id_barang"),
+        nama_barang: form.get("nama_barang"),
+        kategori: form.get("kategori"),
+        expired: form.get("expired"),
+        plu: form.get("plu"),
+        qty_awal: form.get("qty_awal"),
+        qty_terkini: form.get("qty_terkini"),
+      };
+      imageValue = form.get("gambar");
+    } else {
+      body = await request.json();
+    }
+
     const id = String(body.id_barang ?? "").trim();
     if (!id) return fail("ID barang tidak valid.");
     const fields: Record<string, string | number | null> = {};
@@ -138,17 +158,29 @@ export async function PATCH(request: NextRequest) {
       }
     }
     if (("nama_barang" in fields && !String(fields.nama_barang ?? "").trim()) || ("kategori" in fields && !String(fields.kategori ?? "").trim())) return fail("Nama barang dan kategori tidak boleh kosong.");
-    const allowed = Object.keys(fields);
-    if (!allowed.length) return fail("Tidak ada field yang diubah.");
+    if (!(imageValue instanceof File && imageValue.size > 0) && !Object.keys(fields).length) return fail("Tidak ada field yang diubah.");
+
     const [existingRows] = await db.execute<DBRow[]>("SELECT gambar FROM tb_barang_gc WHERE id_barang = ? LIMIT 1", [id]);
     if (!existingRows.length) return fail("Barang tidak ditemukan.", 404);
     const oldImage = existingRows[0].gambar ? String(existingRows[0].gambar) : null;
+    if (imageValue instanceof File && imageValue.size > 0) {
+      uploadedImage = await saveImage(imageValue);
+      if (uploadedImage) fields.gambar = uploadedImage;
+    }
+    const allowed = Object.keys(fields);
+    if (!allowed.length) return fail("Tidak ada field yang diubah.");
     await db.execute(`UPDATE tb_barang_gc SET ${allowed.map(k => `${k} = ?`).join(", ")} WHERE id_barang = ?`, [...allowed.map(k => fields[k]), id]);
-    if (Object.hasOwn(body, "gambar") && oldImage && oldImage !== fields.gambar) await removeImageIfUnused(oldImage, id);
+    databaseUpdated = true;
+    if (uploadedImage && oldImage && oldImage !== uploadedImage) await removeImageIfUnused(oldImage, id);
+    else if (Object.hasOwn(body, "gambar") && oldImage && oldImage !== fields.gambar) await removeImageIfUnused(oldImage, id);
     return NextResponse.json({ success: true, message: "Barang berhasil diperbarui." });
-  } catch (error) { return fail(databaseErrorMessage(error), 500); }
+  } catch (error) {
+    if (uploadedImage && !databaseUpdated) {
+      try { await unlink(path.join(uploadDir(), path.basename(uploadedImage))); } catch { /* Clean up newly uploaded file after failed update. */ }
+    }
+    return fail(databaseErrorMessage(error), 400);
+  }
 }
-
 export async function DELETE(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
