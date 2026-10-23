@@ -380,8 +380,9 @@ export default function SerahTerimaPage() {
         ]);
       });
 
-      // Tiga baris tabel minimal, mengikuti lembar serah-terima cetak.
-      while (body.length < 3) body.push(["", "", ""]);
+      // Sisakan tiga baris kosong untuk penambahan alokasi mendadak secara manual.
+      // Selalu tambahkan tiga baris kosong, bukan hanya melengkapi jumlah baris menjadi tiga.
+      body.push(["", "", ""], ["", "", ""], ["", "", ""]);
 
       autoTable(doc, {
         startY: 38,
@@ -414,6 +415,8 @@ export default function SerahTerimaPage() {
 
       const finalY =
         (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 65;
+      // Posisi tanda tangan dibuat tetap. Bila tabel terlalu panjang, gunakan halaman berikutnya
+      // agar jarak tanda tangan dari tepi bawah tidak berubah-ubah.
       if (finalY > pageHeight - 62) doc.addPage();
       const signY = pageHeight - 54;
 
