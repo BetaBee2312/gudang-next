@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Boxes, Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { notify } from "@/lib/sweetalert";
 
 export default function LoginPage() {
@@ -13,5 +13,38 @@ export default function LoginPage() {
     try { const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ no_karyawan: noKaryawan, password }) }); const data = await response.json(); if (!response.ok) throw new Error(data.message || "Login gagal."); router.replace(data.redirect || "/barang"); router.refresh(); }
     catch (e) { const message = e instanceof Error ? e.message : "Login gagal."; setError(""); await notify("Login gagal", "error", message); } finally { setLoading(false); }
   }
-  return <div className="login-screen"><section className="login-visual"><div className="login-mark"><div className="brand-mark"><Boxes size={20}/></div><span>Gudang Marketing</span></div><div className="relative z-10"><div className="eyebrow text-lime-200 mb-4">Inventory · Allocation · Reporting</div><h1>Barang tertata.<br/>Operasional lebih jelas.</h1><p>Satu ruang kerja untuk mengelola stok marketing, distribusi ke cabang, serah-terima, dan laporan inventori.</p></div><div className="relative z-10 text-xs text-white/45">Internal operations workspace · {new Date().getFullYear()}</div></section><section className="login-form-side"><form className="login-card" onSubmit={submit}><div className="brand-mark mb-7"><Boxes size={20}/></div><div className="eyebrow mb-2">Selamat datang kembali</div><h2>Masuk ke akun</h2><p>Gunakan nomor karyawan dan password yang terdaftar.</p>{error && <div className="toast error">{error}</div>}<div className="form-group"><label className="form-label" htmlFor="no">Nomor karyawan</label><div className="relative"><UserRound className="absolute left-3 top-3 text-slate-400" size={16}/><input id="no" className="field pl-10" autoFocus value={noKaryawan} onChange={e => setNoKaryawan(e.target.value)} placeholder="Contoh: MKT-001" required/></div></div><div className="form-group"><label className="form-label" htmlFor="password">Password</label><div className="relative"><LockKeyhole className="absolute left-3 top-3 text-slate-400" size={16}/><input id="password" className="field pl-10 pr-10" type={show ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Masukkan password" required/><button type="button" className="absolute right-3 top-3 text-slate-400" onClick={() => setShow(!show)} aria-label="Tampilkan password">{show ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div></div><button type="submit" className="btn btn-primary w-full mt-3" disabled={loading}>{loading ? "Memeriksa akun…" : "Masuk ke ruang kerja"}</button><p className="login-help">Akun menggunakan kredensial yang sudah ada di tabel <code>tb_akun</code>. Untuk login, koneksi MySQL harus aktif.</p></form></section></div>;
+  return (
+    <main className="login-screen login-screen-card">
+      <section className="login-card-wrap" aria-label="Login Gudang Marketing">
+        <form className="login-card login-card-clean" onSubmit={submit}>
+          <div className="login-logo-wrap">
+            <img src="/image/logoyomart.png" alt="Yomart" className="login-logo" />
+          </div>
+          <div className="login-version">SISTEM GUDANG MARKETING</div>
+          <h1>Login</h1>
+          <p className="login-subtitle">Masuk menggunakan akun karyawan yang terdaftar.</p>
+          {error && <div className="toast error">{error}</div>}
+          <div className="form-group">
+            <label className="form-label" htmlFor="no">Nomor karyawan</label>
+            <div className="login-input-wrap">
+              <UserRound size={17} aria-hidden="true" />
+              <input id="no" className="field login-input" autoFocus value={noKaryawan} onChange={e => setNoKaryawan(e.target.value)} placeholder="Masukkan nomor karyawan" autoComplete="username" required />
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="password">Password</label>
+            <div className="login-input-wrap">
+              <LockKeyhole size={17} aria-hidden="true" />
+              <input id="password" className="field login-input login-password-input" type={show ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Masukkan password" autoComplete="current-password" required />
+              <button type="button" className="login-toggle-password" onClick={() => setShow(!show)} aria-label={show ? "Sembunyikan password" : "Tampilkan password"}>{show ? <EyeOff size={17}/> : <Eye size={17}/>}</button>
+            </div>
+          </div>
+          <button type="submit" className="btn btn-primary login-submit" disabled={loading}>{loading ? "Memeriksa akun…" : "Masuk"}</button>
+          <p className="login-help">Gunakan kredensial yang sudah terdaftar. Pastikan koneksi sistem aktif jika gagal masuk.</p>
+          <div className="login-footer">Gudang Marketing <span>•</span> {new Date().getFullYear()}</div>
+        </form>
+      </section>
+    </main>
+  );
+}
 }
