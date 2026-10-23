@@ -418,7 +418,7 @@ export default function SerahTerimaPage() {
       // Posisi tanda tangan dibuat tetap. Bila tabel terlalu panjang, gunakan halaman berikutnya
       // agar jarak tanda tangan dari tepi bawah tidak berubah-ubah.
       if (finalY > pageHeight - 62) doc.addPage();
-      const signY = pageHeight - 54;
+      const signY = pageHeight - 68;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
