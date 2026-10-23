@@ -130,6 +130,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
     setCurrentPage(1);
   }, [query, category, habis]);
 
+  const allFilteredSelected = filtered.length > 0 && filtered.every((item) => selected.includes(item.id_barang));
   const totalQty = items.reduce((sum, item) => sum + Number(item.qty_terkini || 0), 0);
 
   function openAdd() {
@@ -198,7 +199,17 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
     const chosenItems = items.filter((item) => selected.includes(item.id_barang));
     const itemsList = chosenItems.map((item) => `- ${item.nama_barang}`).join("\n");
 
-    if (!confirm(`Hapus ${selected.length} barang berikut?\n\n${itemsList}\n\nAksi ini tidak bisa dibatalkan.`)) return;
+    const confirmation = await Swal.fire({
+      title: `Hapus ${selected.length} barang?`,
+      text: chosenItems.length ? chosenItems.slice(0, 5).map(item => item.nama_barang).join(", ") + (chosenItems.length > 5 ? ` dan ${chosenItems.length - 5} lainnya` : "") : itemsList,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, hapus",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#dc2626",
+      reverseButtons: true,
+    });
+    if (!confirmation.isConfirmed) return;
     
     try {
       await requestJSON("/api/barang", { method: "DELETE", body: JSON.stringify({ ids: selected }) });
@@ -273,7 +284,17 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
   }
 
   async function renew() {
-    if (!confirm("Arsipkan stok sekarang lalu jadikan stok terkini sebagai stok awal bulan berikutnya?")) return;
+    const confirmation = await Swal.fire({
+      title: "Renew stok bulanan?",
+      text: "Stok sekarang akan diarsipkan dan stok terkini menjadi stok awal periode berikutnya.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, renew stok",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#334155",
+      reverseButtons: true,
+    });
+    if (!confirmation.isConfirmed) return;
     try {
       const m = new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date());
       const data = await requestJSON<{ message: string }>("/api/barang/renew", {
@@ -355,6 +376,19 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         </select>
         
         {/* Tombol Aksi Massal hanya muncul di mode Desktop (md:flex) */}
+        {admin && !habis && (
+          <label className="inventory-select-all">
+            <input
+              type="checkbox"
+              checked={allFilteredSelected}
+              disabled={filtered.length === 0}
+              onChange={(event) => setSelected((current) => event.target.checked
+                ? [...new Set([...current, ...filtered.map((item) => item.id_barang)])]
+                : current.filter((id) => !filtered.some((item) => item.id_barang === id)))}
+            />
+            <span>Pilih Semua ({filtered.length})</span>
+          </label>
+        )}
         {admin && !habis && selected.length > 0 && (
           <div className="hidden md:flex gap-2">
             <button className="btn" onClick={openBulkEdit}>
