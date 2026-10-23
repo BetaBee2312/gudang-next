@@ -142,7 +142,6 @@ export async function GET(request: NextRequest) {
               br: { col: 2.88, row: row.number - 0.1 },
               editAs: "twoCell",
             }) as Parameters<typeof ws.addImage>[1]);
-            });
           }
         } catch {
           // Continue export if an old image is missing or cannot be decoded.
