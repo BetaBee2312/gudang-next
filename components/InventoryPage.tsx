@@ -358,68 +358,32 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         </div>
       )}
 
-      {/* Toolbar - Dibuat flex-wrap agar responsive */}
+      {/* Toolbar: search, filters, and bulk actions */}
       <div className="toolbar flex flex-wrap items-center gap-3">
         <label className="search-wrap flex-1 min-w-[200px]">
           <Search size={16} />
-          <input
-            placeholder="Cari nama, ID barang, atau PLU…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+          <input placeholder="Cari nama, ID barang, atau PLU…" value={query} onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }} />
         </label>
-        <select
-          className="select-field"
-          style={{ width: "auto", minWidth: 170 }}
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
+        <select className="select-field" style={{ width: "auto", minWidth: 170 }} value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }}>
           <option value="">Semua kategori</option>
-          {categories.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
+          {categories.map((c) => <option key={c}>{c}</option>)}
         </select>
-        
-        {/* Tombol Aksi Massal hanya muncul di mode Desktop (md:flex) */}
         {admin && (
           <label className="inventory-select-all">
-            <input
-              type="checkbox"
-              checked={allFilteredSelected}
-              disabled={filtered.length === 0}
-              onChange={(event) => setSelected((current) => event.target.checked
-                ? [...new Set([...current, ...filtered.map((item) => item.id_barang)])]
-                : current.filter((id) => !filtered.some((item) => item.id_barang === id)))}
-            />
+            <input type="checkbox" checked={allFilteredSelected} disabled={filtered.length === 0} onChange={(event) => setSelected((current) => event.target.checked ? [...new Set([...current, ...filtered.map((item) => item.id_barang)])] : current.filter((id) => !filtered.some((item) => item.id_barang === id)))} />
             <span>Pilih Semua ({filtered.length})</span>
           </label>
         )}
         {admin && selected.length > 0 && (
           <div className="hidden md:flex gap-2">
-            <button className="btn" onClick={openBulkEdit}>
-              <Pencil size={15} /> Edit Massal ({selected.length})
-            </button>
-            <button className="btn btn-danger" onClick={deleteSelected}>
-              <Trash2 size={15} /> Hapus ({selected.length})
-            </button>
+            <button type="button" className="btn" onClick={openBulkEdit}><Pencil size={15} /> Edit Massal ({selected.length})</button>
+            <button type="button" className="btn btn-danger" onClick={deleteSelected}><Trash2 size={15} /> Hapus ({selected.length})</button>
           </div>
         )}
-        
         {!habis && (
           <div className="flex gap-2 w-full md:w-auto">
-            <input
-              type="month"
-              className="field flex-1 md:flex-none"
-              style={{ width: 150 }}
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-            />
-            <a
-              className="btn justify-center"
-              href={`/api/barang/export?bulan=${encodeURIComponent(month)}${category ? `&filter=${encodeURIComponent(category.toLowerCase())}` : ""}`}
-            >
-              <Download size={16} /> Export
-            </a>
+            <input type="month" className="field flex-1 md:flex-none" style={{ width: 150 }} value={month} onChange={(e) => setMonth(e.target.value)} />
+            <a className="btn justify-center" href={`/api/barang/export?bulan=${encodeURIComponent(month)}${category ? `&filter=${encodeURIComponent(category.toLowerCase())}` : ""}`}><Download size={16} /> Export</a>
           </div>
         )}
       </div>
