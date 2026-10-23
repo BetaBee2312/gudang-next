@@ -111,6 +111,7 @@ export default function SerahTerimaPage() {
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [nama, setNama] = useState("");
+  const [sessionName, setSessionName] = useState("");
   const [jabatan, setJabatan] = useState("");
   const [tujuan, setTujuan] = useState("");
   const [tanggal, setTanggal] = useState(new Date().toISOString().slice(0, 10));
@@ -143,6 +144,7 @@ export default function SerahTerimaPage() {
       user: { nama: string; jabatan?: string; kategori: string };
     }>("/api/auth/me")
       .then((data) => {
+        setSessionName(data.user.nama);
         setNama(data.user.nama);
         setJabatan(data.user.jabatan ?? "");
         setAdmin(["admin", "creator"].includes(data.user.kategori.toLowerCase()));
@@ -420,7 +422,7 @@ export default function SerahTerimaPage() {
       doc.text("MENYERAHKAN", left, signY);
       doc.text("MENERIMA", right - 35, signY);
       doc.setFont("helvetica", "bold");
-      doc.text(String(nama || item.nama || "").toUpperCase(), left, signY + 27);
+      doc.text(String(sessionName || "ADMIN MARKETING").toUpperCase(), left, signY + 27);
       doc.setFont("helvetica", "normal");
       doc.text("ADM. MARKETING", left, signY + 33);
 
