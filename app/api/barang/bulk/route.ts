@@ -10,7 +10,7 @@ import { requireUser, isResponse, fail } from "@/lib/http";
 export const runtime = "nodejs";
 
 const uploadDir = () => path.join(process.cwd(), "public", "image");
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
 const TARGET_IMAGE_SIZE = 900 * 1024;
 const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
@@ -36,7 +36,7 @@ type NormalizedItem = {
 
 async function saveImage(value: FormDataEntryValue | null): Promise<string | null> {
   if (!(value instanceof File) || value.size === 0) return null;
-  if (value.size > MAX_IMAGE_SIZE) throw new Error(`Foto ${value.name}: ukuran maksimal 5 MB.`);
+  if (value.size > MAX_IMAGE_SIZE) throw new Error(`Foto ${value.name}: ukuran maksimal 20 MB sebelum kompresi.`);
   const ext = path.extname(value.name).toLowerCase();
   if (!ALLOWED_EXTENSIONS.has(ext)) throw new Error(`Foto ${value.name}: format harus JPG, PNG, atau WebP.`);
 
