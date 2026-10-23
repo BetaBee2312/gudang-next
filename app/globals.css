@@ -477,3 +477,16 @@ thead th{padding:11px 14px}
 
 /* Show the entire product photo without cropping. */
 .product-image img{object-fit:contain;background:#f0f4f0}
+
+/* Skeleton loading placeholders used by page data panels */
+@keyframes skeleton-shimmer { 100% { transform: translateX(100%); } }
+.skeleton{display:block;position:relative;overflow:hidden;background:#e8eee8;border-radius:10px}
+.skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:skeleton-shimmer 1.25s infinite}
+.skeleton-line{height:12px;border-radius:999px}
+.skeleton-w-15{width:15%}.skeleton-w-25{width:25%}.skeleton-w-60{width:60%}
+.skeleton-list,.skeleton-table{display:grid;gap:12px;padding:14px}
+.skeleton-row{display:grid;grid-template-columns:minmax(70px,.25fr) minmax(120px,.6fr) minmax(45px,.15fr);align-items:center;gap:14px;padding:15px 6px;border-bottom:1px solid #edf1ed}
+.skeleton-profile{display:grid;grid-template-columns:88px 1fr;align-items:center;gap:16px;padding:20px;background:#fff;border:1px solid var(--line);border-radius:16px}
+.skeleton-avatar{width:88px;height:88px;border-radius:50%;grid-row:span 2}
+.skeleton-block{height:140px;grid-column:1/-1}
+@media(prefers-reduced-motion:reduce){.skeleton::after{animation:none}}
