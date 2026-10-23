@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import DashboardShell from "@/components/DashboardShell";
 import { requestJSON } from "@/lib/client";
+import { notify } from "@/lib/sweetalert";
 import { Check, LockKeyhole, UserRound, Upload, X } from "lucide-react";
 
 type Profile = { no_karyawan: string; nama: string; jabatan?: string; division: string; kategori: string; profilepic?: string | null };
@@ -51,7 +52,7 @@ export default function ProfilPage() {
         method: "PATCH",
         body: formData,
       });
-      setNotice(d.message);
+      setNotice(""); await notify("Profil berhasil diperbarui", "success", d.message);
       setPassword("");
       setConfirmPass("");
       if (d.nikChanged || nik.trim() !== user?.no_karyawan) {
@@ -66,7 +67,7 @@ export default function ProfilPage() {
       if (fileRef.current) fileRef.current.value = "";
 
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : "Gagal menyimpan profil.");
+      setNotice(""); await notify("Gagal menyimpan profil", "error", err instanceof Error ? err.message : "Terjadi kesalahan.");
       setError(true);
     } finally { setSaving(false); }
   }

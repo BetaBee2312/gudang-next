@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
 import { requestJSON, shortDate, toDateInput } from "@/lib/client";
+import Swal from "sweetalert2";
+import { notify } from "@/lib/sweetalert";
 
 type Product = {
   id_barang: string;
@@ -130,6 +132,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
     setCurrentPage(1);
   }, [query, category, habis]);
 
+  const allFilteredSelected = filtered.length > 0 && filtered.every((item) => selected.includes(item.id_barang));
   const totalQty = items.reduce((sum, item) => sum + Number(item.qty_terkini || 0), 0);
 
   function openAdd() {
@@ -182,10 +185,12 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         await requestJSON("/api/barang", { method: "POST", body: data });
       }
       setModal(false);
-      setToast(editing ? "Barang diperbarui." : "Barang berhasil ditambahkan.");
+      setToast("");
+      await notify(editing ? "Barang diperbarui" : "Barang berhasil ditambahkan", "success");
       await load();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Gagal menyimpan barang.");
+      setToast("");
+      await notify("Gagal menyimpan barang", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
     } finally {
       setSaving(false);
     }
@@ -198,15 +203,27 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
     const chosenItems = items.filter((item) => selected.includes(item.id_barang));
     const itemsList = chosenItems.map((item) => `- ${item.nama_barang}`).join("\n");
 
-    if (!confirm(`Hapus ${selected.length} barang berikut?\n\n${itemsList}\n\nAksi ini tidak bisa dibatalkan.`)) return;
+    const confirmation = await Swal.fire({
+      title: `Hapus ${selected.length} barang?`,
+      text: chosenItems.length ? chosenItems.slice(0, 5).map(item => item.nama_barang).join(", ") + (chosenItems.length > 5 ? ` dan ${chosenItems.length - 5} lainnya` : "") : itemsList,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, hapus",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#dc2626",
+      reverseButtons: true,
+    });
+    if (!confirmation.isConfirmed) return;
     
     try {
       await requestJSON("/api/barang", { method: "DELETE", body: JSON.stringify({ ids: selected }) });
       setSelected([]);
-      setToast("Barang terpilih berhasil dihapus.");
+      setToast("");
+      await notify("Barang terpilih berhasil dihapus", "success");
       await load();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Gagal menghapus barang.");
+      setToast("");
+      await notify("Gagal menghapus barang", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
     }
   }
 
@@ -231,9 +248,9 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
     e.preventDefault();
     setBulkSaving(true);
     try {
-      if (!bulkRows.length) { setToast("Pilih setidaknya satu barang untuk diedit."); return; }
-      if (bulkRows.some((row) => !row.nama_barang.trim() || !Number.isInteger(Number(row.qty_awal)) || Number(row.qty_awal) < 0 || !Number.isInteger(Number(row.qty_terkini)) || Number(row.qty_terkini) < 0)) { setToast("Nama barang wajib diisi dan jumlah stok harus bilangan bulat nol atau lebih."); return; }
-      if (bulkRows.some((row) => row.newImage && (row.newImage.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(row.newImage.type)))) { setToast("Foto harus JPG, PNG, atau WebP dengan ukuran maksimal 5 MB."); return; }
+      if (!bulkRows.length) { await notify("Belum ada barang yang dipilih", "warning", "Pilih setidaknya satu barang untuk diedit."); return; }
+      if (bulkRows.some((row) => !row.nama_barang.trim() || !Number.isInteger(Number(row.qty_awal)) || Number(row.qty_awal) < 0 || !Number.isInteger(Number(row.qty_terkini)) || Number(row.qty_terkini) < 0)) { await notify("Data stok tidak valid", "error", "Nama wajib diisi dan jumlah stok harus bilangan bulat nol atau lebih."); return; }
+      if (bulkRows.some((row) => row.newImage && (row.newImage.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(row.newImage.type)))) { await notify("Foto tidak valid", "error", "Foto harus JPG, PNG, atau WebP dengan ukuran maksimal 5 MB."); return; }
       // Kita gunakan FormData agar bisa mengirim kombinasi JSON string dan file (gambar) massal
       const formData = new FormData();
       
@@ -263,27 +280,41 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       
       setBulkModal(false);
       setSelected([]);
-      setToast(d.message || "Edit massal berhasil disimpan.");
+      setToast("");
+      await notify("Edit massal berhasil disimpan", "success", d.message);
       await load();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Gagal mengedit massal.");
+      setToast("");
+      await notify("Gagal mengedit massal", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
     } finally {
       setBulkSaving(false);
     }
   }
 
   async function renew() {
-    if (!confirm("Arsipkan stok sekarang lalu jadikan stok terkini sebagai stok awal bulan berikutnya?")) return;
+    const confirmation = await Swal.fire({
+      title: "Renew stok bulanan?",
+      text: "Stok sekarang akan diarsipkan dan stok terkini menjadi stok awal periode berikutnya.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, renew stok",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#334155",
+      reverseButtons: true,
+    });
+    if (!confirmation.isConfirmed) return;
     try {
       const m = new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date());
       const data = await requestJSON<{ message: string }>("/api/barang/renew", {
         method: "POST",
         body: JSON.stringify({ bulan: m }),
       });
-      setToast(data.message);
+      setToast("");
+      await notify("Stok berhasil diperbarui", "success", data.message);
       await load();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Rollover gagal.");
+      setToast("");
+      await notify("Renew stok gagal", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
     }
   }
 
@@ -355,6 +386,19 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         </select>
         
         {/* Tombol Aksi Massal hanya muncul di mode Desktop (md:flex) */}
+        {admin && !habis && (
+          <label className="inventory-select-all">
+            <input
+              type="checkbox"
+              checked={allFilteredSelected}
+              disabled={filtered.length === 0}
+              onChange={(event) => setSelected((current) => event.target.checked
+                ? [...new Set([...current, ...filtered.map((item) => item.id_barang)])]
+                : current.filter((id) => !filtered.some((item) => item.id_barang === id)))}
+            />
+            <span>Pilih Semua ({filtered.length})</span>
+          </label>
+        )}
         {admin && !habis && selected.length > 0 && (
           <div className="hidden md:flex gap-2">
             <button className="btn" onClick={openBulkEdit}>

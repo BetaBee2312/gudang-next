@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 export const metadata: Metadata = {
   title: "Gudang Marketing",
