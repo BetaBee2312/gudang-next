@@ -183,10 +183,12 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         await requestJSON("/api/barang", { method: "POST", body: data });
       }
       setModal(false);
-      setToast(editing ? "Barang diperbarui." : "Barang berhasil ditambahkan.");
+      setToast("");
+      await notify(editing ? "Barang diperbarui" : "Barang berhasil ditambahkan", "success");
       await load();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Gagal menyimpan barang.");
+      setToast("");
+      await notify("Gagal menyimpan barang", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
     } finally {
       setSaving(false);
     }
@@ -214,10 +216,12 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
     try {
       await requestJSON("/api/barang", { method: "DELETE", body: JSON.stringify({ ids: selected }) });
       setSelected([]);
-      setToast("Barang terpilih berhasil dihapus.");
+      setToast("");
+      await notify("Barang terpilih berhasil dihapus", "success");
       await load();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Gagal menghapus barang.");
+      setToast("");
+      await notify("Gagal menghapus barang", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
     }
   }
 
@@ -242,9 +246,9 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
     e.preventDefault();
     setBulkSaving(true);
     try {
-      if (!bulkRows.length) { setToast("Pilih setidaknya satu barang untuk diedit."); return; }
-      if (bulkRows.some((row) => !row.nama_barang.trim() || !Number.isInteger(Number(row.qty_awal)) || Number(row.qty_awal) < 0 || !Number.isInteger(Number(row.qty_terkini)) || Number(row.qty_terkini) < 0)) { setToast("Nama barang wajib diisi dan jumlah stok harus bilangan bulat nol atau lebih."); return; }
-      if (bulkRows.some((row) => row.newImage && (row.newImage.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(row.newImage.type)))) { setToast("Foto harus JPG, PNG, atau WebP dengan ukuran maksimal 5 MB."); return; }
+      if (!bulkRows.length) { await notify("Belum ada barang yang dipilih", "warning", "Pilih setidaknya satu barang untuk diedit."); return; }
+      if (bulkRows.some((row) => !row.nama_barang.trim() || !Number.isInteger(Number(row.qty_awal)) || Number(row.qty_awal) < 0 || !Number.isInteger(Number(row.qty_terkini)) || Number(row.qty_terkini) < 0)) { await notify("Data stok tidak valid", "error", "Nama wajib diisi dan jumlah stok harus bilangan bulat nol atau lebih."); return; }
+      if (bulkRows.some((row) => row.newImage && (row.newImage.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(row.newImage.type)))) { await notify("Foto tidak valid", "error", "Foto harus JPG, PNG, atau WebP dengan ukuran maksimal 5 MB."); return; }
       // Kita gunakan FormData agar bisa mengirim kombinasi JSON string dan file (gambar) massal
       const formData = new FormData();
       
@@ -274,10 +278,12 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       
       setBulkModal(false);
       setSelected([]);
-      setToast(d.message || "Edit massal berhasil disimpan.");
+      setToast("");
+      await notify("Edit massal berhasil disimpan", "success", d.message);
       await load();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Gagal mengedit massal.");
+      setToast("");
+      await notify("Gagal mengedit massal", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
     } finally {
       setBulkSaving(false);
     }
@@ -301,10 +307,12 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         method: "POST",
         body: JSON.stringify({ bulan: m }),
       });
-      setToast(data.message);
+      setToast("");
+      await notify("Stok berhasil diperbarui", "success", data.message);
       await load();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Rollover gagal.");
+      setToast("");
+      await notify("Renew stok gagal", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
     }
   }
 
