@@ -8,7 +8,7 @@ import { requireUser, isResponse, fail } from "@/lib/http";
 
 export const runtime = "nodejs";
 const PREFIX: Record<string, string> = { Marketing: "MKT", MD: "MD", "Marketing-D53": "MKT-D53", "MD-D53": "MD-D53", "Marketing-DGBG": "MKT-GBG", "MD-DGBG": "MD-GBG" };
-const uploadDir = () => path.join(process.cwd(), "public", "gambar");
+const uploadDir = () => path.join(process.cwd(), "public", "image");
 
 async function saveImage(value: FormDataEntryValue | null): Promise<string | null> {
   if (!(value instanceof File) || value.size === 0) return null;
