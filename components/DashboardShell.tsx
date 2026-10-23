@@ -22,6 +22,7 @@ const nav = [
   ]},
 ];
 const titles: Record<string, string> = { "/barang": "Daftar Barang", "/stok-habis": "Stok Habis / MD", "/alokasi": "Alokasi Barang", "/serah-terima": "Serah Terima", "/cabang": "Daftar Cabang", "/akun": "Akun Terdaftar", "/chat-ai": "Gudang Marketing AI", "/profil": "Profil Saya" };
+const subtitles: Record<string, string> = {};
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname(); const router = useRouter();
