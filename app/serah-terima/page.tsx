@@ -448,10 +448,7 @@ export default function SerahTerimaPage() {
       <div className="page-heading">
         <div>
           <h1>Serah Terima</h1>
-          <p>
-            Catatan dikelompokkan menjadi satu dokumen berdasarkan ID induk di
-            tb_serah_terima. Setiap huruf suffix menandai baris item di dalam dokumen.
-          </p>
+
         </div>
         <div className="heading-actions">
           <button className="btn" onClick={exportCsv}>
@@ -514,7 +511,7 @@ export default function SerahTerimaPage() {
         {/* Mulai desain card baru dengan fitur expand/meredup */}
         <div className="handover-cards-list flex flex-col gap-5 mt-4 p-4 md:p-6 bg-slate-50/50 rounded-b-xl">
           {loading ? (
-            <div className="p-8 text-center text-slate-500">Memuat data…</div>
+            <div className="skeleton-list p-4" aria-label="Memuat serah terima">{Array.from({ length: 5 }, (_, i) => <div className="skeleton-row" key={i}><span className="skeleton skeleton-line skeleton-w-25"/><span className="skeleton skeleton-line skeleton-w-60"/><span className="skeleton skeleton-line skeleton-w-15"/></div>)}</div>
           ) : filteredGroups.length === 0 ? (
             <div className="p-8 text-center text-slate-500 bg-white border border-slate-200 rounded-xl shadow-sm">
               Tidak ada dokumen pada filter yang dipilih.
