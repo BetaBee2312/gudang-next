@@ -8,7 +8,7 @@ import { requireUser, isResponse, fail } from "@/lib/http";
 
 export const runtime = "nodejs";
 
-const uploadDir = () => path.join(process.cwd(), "public", "gambar");
+const uploadDir = () => path.join(process.cwd(), "public", "image");
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
