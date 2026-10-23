@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import sharp from "sharp";
 import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { requireUser, isResponse, fail } from "@/lib/http";
@@ -9,18 +10,58 @@ import { requireUser, isResponse, fail } from "@/lib/http";
 export const runtime = "nodejs";
 const PREFIX: Record<string, string> = { Marketing: "MKT", MD: "MD", "Marketing-D53": "MKT-D53", "MD-D53": "MD-D53", "Marketing-DGBG": "MKT-GBG", "MD-DGBG": "MD-GBG" };
 const uploadDir = () => path.join(process.cwd(), "public", "image");
+const MAX_UPLOAD = 5 * 1024 * 1024;
+const TARGET_IMAGE = 900 * 1024;
 
 async function saveImage(value: FormDataEntryValue | null): Promise<string | null> {
   if (!(value instanceof File) || value.size === 0) return null;
-  if (value.size > 5 * 1024 * 1024) throw new Error("Ukuran gambar maksimal 5 MB.");
+  if (value.size > MAX_UPLOAD) throw new Error("Ukuran gambar maksimal 5 MB.");
   const ext = path.extname(value.name).toLowerCase();
   if (![".jpg", ".jpeg", ".png", ".webp"].includes(ext)) throw new Error("Format gambar harus JPG, PNG, atau WebP.");
-  const filename = `${randomUUID()}${ext}`;
+  let input = Buffer.from(await value.arrayBuffer());
+  let output = input;
+  let finalExt = ext;
+  if (input.length > 2 * 1024 * 1024) {
+    let quality = 82;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      output = await sharp(input, { limitInputPixels: 40_000_000 })
+        .rotate()
+        .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality, mozjpeg: true, chromaSubsampling: "4:2:0" })
+        .toBuffer();
+      finalExt = ".jpg";
+      if (output.length < TARGET_IMAGE) break;
+      quality = Math.max(25, quality - 8);
+    }
+    if (output.length >= TARGET_IMAGE) {
+      output = await sharp(input, { limitInputPixels: 40_000_000 })
+        .rotate()
+        .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 25, mozjpeg: true, chromaSubsampling: "4:2:0" })
+        .toBuffer();
+      finalExt = ".jpg";
+    }
+    if (output.length >= 1024 * 1024) throw new Error("Gambar gagal dikompres menjadi di bawah 1 MB. Pilih gambar lain.");
+  }
+  const filename = `${randomUUID()}${finalExt}`;
   await mkdir(uploadDir(), { recursive: true });
-  await writeFile(path.join(uploadDir(), filename), Buffer.from(await value.arrayBuffer()));
+  await writeFile(path.join(uploadDir(), filename), output, { flag: "wx" });
   return filename;
 }
 
+async function removeImageIfUnused(filename: unknown, currentId?: string) {
+  if (!filename) return;
+  const safeName = path.basename(String(filename));
+  if (!safeName || safeName === "." || safeName === "..") return;
+  const [rows] = await db.execute<DBRow[]>(
+    currentId
+      ? "SELECT COUNT(*) AS count FROM tb_barang_gc WHERE gambar = ? AND id_barang <> ?"
+      : "SELECT COUNT(*) AS count FROM tb_barang_gc WHERE gambar = ?",
+    currentId ? [safeName, currentId] : [safeName],
+  );
+  if (Number(rows[0]?.count ?? 0) > 0) return;
+  try { await unlink(path.join(uploadDir(), safeName)); } catch { /* Missing files need no cleanup. */ }
+}
 export async function GET(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
@@ -92,7 +133,11 @@ export async function PATCH(request: NextRequest) {
     if (("nama_barang" in fields && !String(fields.nama_barang ?? "").trim()) || ("kategori" in fields && !String(fields.kategori ?? "").trim())) return fail("Nama barang dan kategori tidak boleh kosong.");
     const allowed = Object.keys(fields);
     if (!allowed.length) return fail("Tidak ada field yang diubah.");
+    const [existingRows] = await db.execute<DBRow[]>("SELECT gambar FROM tb_barang_gc WHERE id_barang = ? LIMIT 1", [id]);
+    if (!existingRows.length) return fail("Barang tidak ditemukan.", 404);
+    const oldImage = existingRows[0].gambar ? String(existingRows[0].gambar) : null;
     await db.execute(`UPDATE tb_barang_gc SET ${allowed.map(k => `${k} = ?`).join(", ")} WHERE id_barang = ?`, [...allowed.map(k => fields[k]), id]);
+    if (Object.hasOwn(body, "gambar") && oldImage && oldImage !== fields.gambar) await removeImageIfUnused(oldImage, id);
     return NextResponse.json({ success: true, message: "Barang berhasil diperbarui." });
   } catch (error) { return fail(databaseErrorMessage(error), 500); }
 }
@@ -107,11 +152,7 @@ export async function DELETE(request: NextRequest) {
     if (!ids.length) return fail("Pilih barang yang ingin dihapus.");
     const [images] = await db.execute<DBRow[]>(`SELECT gambar FROM tb_barang_gc WHERE id_barang IN (${ids.map(() => "?").join(",")})`, ids);
     await db.execute(`DELETE FROM tb_barang_gc WHERE id_barang IN (${ids.map(() => "?").join(",")})`, ids);
-    for (const row of images) {
-      if (row.gambar) {
-        try { await unlink(path.join(uploadDir(), path.basename(String(row.gambar)))); } catch { /* Foto yang sudah hilang tidak menggagalkan hapus data. */ }
-      }
-    }
+    for (const row of images) await removeImageIfUnused(row.gambar);
     return NextResponse.json({ success: true, message: `${ids.length} barang dihapus.` });
   } catch (error) { return fail(databaseErrorMessage(error), 500); }
 }
