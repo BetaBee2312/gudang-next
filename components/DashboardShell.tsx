@@ -36,6 +36,23 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     return () => { alive = false; };
   }, [router]);
   useEffect(() => { setMobileOpen(false); }, [pathname]);
+  // Heartbeat menandai sesi ini aktif. Beberapa perangkat menghasilkan token sesi berbeda.
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    const ping = () => {
+      if (active) fetch("/api/presence", { method: "POST", cache: "no-store", keepalive: true }).catch(() => {});
+    };
+    ping();
+    const timer = window.setInterval(ping, 30_000);
+    const onVisible = () => { if (document.visibilityState === "visible") ping(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [user?.no_karyawan]);
   useEffect(() => {
     if (user && user.division.toLowerCase() === "md" && !["/barang", "/profil"].includes(pathname)) router.replace("/barang");
   }, [user, pathname, router]);
