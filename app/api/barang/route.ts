@@ -100,10 +100,15 @@ export async function POST(request: NextRequest) {
     const id = `${PREFIX[kategori] ?? "OTH"}-${String(number).padStart(3, "0")}`;
     const image = await saveImage(form.get("gambar"));
     const bulan = new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date());
-    await db.execute(
-      "INSERT INTO tb_barang_gc (id_barang, gambar, nama_barang, kategori, expired, qty_awal, qty_terkini, teralokasi, bulan, plu) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
-      [id, image, nama, kategori, expiredRaw || null, qtyAwal, qtyAwal, bulan, plu],
-    );
+    try {
+      await db.execute(
+        "INSERT INTO tb_barang_gc (id_barang, gambar, nama_barang, kategori, expired, qty_awal, qty_terkini, teralokasi, bulan, plu) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
+        [id, image, nama, kategori, expiredRaw || null, qtyAwal, qtyAwal, bulan, plu],
+      );
+    } catch (error) {
+      if (image) await removeImageIfUnused(image);
+      throw error;
+    }
     return NextResponse.json({ success: true, message: "Barang berhasil ditambahkan.", id_barang: id }, { status: 201 });
   } catch (error) { return fail(databaseErrorMessage(error), 500); }
 }
