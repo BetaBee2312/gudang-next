@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import DashboardShell from "@/components/DashboardShell";
 import { requestJSON, shortDate } from "@/lib/client";
+import { confirmAction, notify } from "@/lib/sweetalert";
 import {
   ClipboardList,
   Plus,
@@ -249,12 +250,12 @@ export default function SerahTerimaPage() {
         method: "POST",
         body: JSON.stringify({ nama, jabatan, tujuan, tanggal, items: lines.map(({ keperluan, jumlah, cabang }) => ({ keperluan, jumlah, cabang: cabang.join(",") })) }),
       });
-      setNotice(response.message);
+      setNotice(""); await notify("Serah terima berhasil disimpan", "success", response.message);
       setModal(false);
       resetForm();
       await load();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Gagal menyimpan.");
+      setNotice(""); await notify("Gagal menyimpan serah terima", "error", error instanceof Error ? error.message : "Terjadi kesalahan.");
     } finally {
       setSaving(false);
     }
@@ -262,8 +263,10 @@ export default function SerahTerimaPage() {
 
   async function remove(group: HandoverGroup) {
     if (!admin) return;
-    const confirmed = confirm(
-      `Hapus dokumen ${group.key} beserta ${group.rows.length} baris item?`,
+    const confirmed = await confirmAction(
+      `Hapus dokumen ${group.key}?`,
+      `Dokumen ini berisi ${group.rows.length} baris item. Tindakan tidak bisa dibatalkan.`,
+      { confirmButtonColor: "#dc2626", confirmButtonText: "Ya, hapus dokumen" },
     );
     if (!confirmed) return;
 
@@ -277,14 +280,12 @@ export default function SerahTerimaPage() {
           }),
         ),
       );
-      setNotice(`Dokumen ${group.key} berhasil dihapus.`);
+      setNotice(""); await notify("Dokumen berhasil dihapus", "success", group.key);
       await load();
     } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? `${error.message} Sebagian baris mungkin sudah terhapus; muat ulang data untuk memeriksa.`
-          : "Gagal menghapus dokumen.",
-      );
+      await notify("Gagal menghapus dokumen", "error", error instanceof Error
+        ? `${error.message} Sebagian baris mungkin sudah terhapus; muat ulang data untuk memeriksa.`
+        : "Terjadi kesalahan.");
       await load();
     }
   }
