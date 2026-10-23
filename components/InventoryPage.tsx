@@ -401,7 +401,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       {error && (
         <div className="toast error">
           {error}{" "}
-          <button className="underline" onClick={load}>
+          <button className="underline" onClick={() => void load({ force: true })}>
             Coba lagi
           </button>
         </div>
