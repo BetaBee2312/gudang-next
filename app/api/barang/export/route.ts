@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
               .jpeg({ quality: 32, mozjpeg: true, progressive: true, chromaSubsampling: "4:2:0" })
               .toBuffer();
 
-            const imageId = wb.addImage({ buffer: Buffer.from(compressed) as unknown as Buffer, extension: "jpeg" });
+            const imageId = wb.addImage({ buffer: Buffer.from(compressed) as any, extension: "jpeg" });
             // Fit the image within the cell without stretching its original aspect ratio.
             const metadata = await sharp(compressed).metadata();
             const imageWidth = metadata.width ?? 150;
