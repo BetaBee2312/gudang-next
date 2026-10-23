@@ -350,7 +350,7 @@ export default function SerahTerimaPage() {
       const left = 14;
       const right = pageWidth - 14;
 
-      // Logo YOMART berasal dari public/image, tidak disalin ke folder upload barang.
+      // Render logo pada kanvas putih agar area transparan tidak menjadi hitam di PDF.
       try {
         const logo = new Image();
         logo.src = "/image/logoyomart.png";
@@ -358,7 +358,17 @@ export default function SerahTerimaPage() {
           logo.onload = () => resolve();
           logo.onerror = () => reject(new Error("Logo YOMART tidak dapat dimuat."));
         });
-        doc.addImage(logo, "PNG", left, 5, 55, 13);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = logo.naturalWidth || logo.width;
+        canvas.height = logo.naturalHeight || logo.height;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Canvas logo tidak dapat dibuat.");
+
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(logo, 0, 0, canvas.width, canvas.height);
+        doc.addImage(canvas.toDataURL("image/png"), "PNG", left, 5, 55, 13);
       } catch {
         // PDF tetap bisa dibuat bila logo tidak tersedia.
       }
