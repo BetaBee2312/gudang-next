@@ -73,7 +73,7 @@ export default function ProfilPage() {
   }
 
   return <DashboardShell>
-    <div className="page-heading"><div><div className="eyebrow">Pengaturan personal</div><h1>Profil Saya</h1><p>Kelola NIK, nama, password, dan foto profil.</p></div></div>
+    <div className="page-heading"><div><h1>Profil Saya</h1><p>Kelola NIK, nama, password, dan foto profil.</p></div></div>
     {notice && <div className={`toast ${error ? "error" : ""}`}>{notice}<button className="float-right" type="button" onClick={() => setNotice("")}><X size={13}/></button></div>}
     {loading ? <div className="panel"><div className="empty-state">Memuat profil…</div></div> : user && <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-5">
       <form className="panel" onSubmit={save}>
