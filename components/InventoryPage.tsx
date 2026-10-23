@@ -290,7 +290,8 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       setSelected([]);
       setToast("");
       await notify("Edit massal berhasil disimpan", "success", d.message);
-      await load();
+      invalidateInventoryCache();
+      await load({ force: true });
     } catch (e) {
       setToast("");
       await notify("Gagal mengedit massal", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
@@ -611,20 +612,19 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
                   />
                 </div>
               </div>
-              {!editing && (
-                <div className="form-group">
-                  <label className="form-label">Foto barang (maksimal 5 MB)</label>
-                  <label className="btn w-full">
-                    <ImagePlus size={16} /> {image ? image.name : "Pilih gambar"}
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      onChange={(e) => setImage(e.target.files?.[0] ?? null)}
-                    />
-                  </label>
-                </div>
-              )}
+              <div className="form-group">
+                <label className="form-label">Foto barang {editing ? "(opsional, kosongkan jika tidak diganti)" : "(opsional)"}</label>
+                <label className="btn w-full">
+                  <ImagePlus size={16} /> {image ? image.name : "Pilih gambar"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+                {image && <p className="table-muted mt-2">Foto baru: {image.name}</p>}
+              </div>
             </div>
             <div className="modal-foot">
               <button type="button" className="btn" onClick={() => setModal(false)}>
