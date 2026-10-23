@@ -75,8 +75,8 @@ export default function ProfilPage() {
   return <DashboardShell>
     <div className="page-heading"><div><h1>Profil Saya</h1><p>Kelola NIK, nama, password, dan foto profil.</p></div></div>
     {notice && <div className={`toast ${error ? "error" : ""}`}>{notice}<button className="float-right" type="button" onClick={() => setNotice("")}><X size={13}/></button></div>}
-    {loading ? <div className="panel"><div className="empty-state">Memuat profil…</div></div> : user && <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-5">
-      <form className="panel" onSubmit={save}>
+    {loading ? <div className="panel"><div className="empty-state">Memuat profil…</div></div> : user && <div className="profile-layout grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-5">
+      <form className="panel profile-form" onSubmit={save}>
         <div className="panel-header"><div><div className="panel-title">Informasi akun</div><div className="panel-subtitle">Jika NIK diubah, kamu akan otomatis logout dan perlu login menggunakan NIK baru.</div></div><div className="stat-icon"><UserRound/></div></div>
         <div className="panel-body">
           <div className="form-grid">
@@ -90,7 +90,7 @@ export default function ProfilPage() {
           <div className="flex justify-end mt-5"><button className="btn btn-primary" disabled={saving}><Check size={14}/>{saving ? "Menyimpan…" : "Simpan Profil"}</button></div>
         </div>
       </form>
-      <aside className="panel h-fit"><div className="panel-body">
+      <aside className="panel h-fit profile-summary"><div className="panel-body">
         <div className="profile-photo-preview">
           {photoPreview ? <img src={photoPreview} alt="Preview foto profil" /> : user.profilepic ? <img src={`/profile/${encodeURIComponent(user.profilepic)}`} alt={user.nama} /> : <div className="avatar w-20 h-20 text-2xl"><UserRound/></div>}
         </div>
