@@ -471,10 +471,16 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
               <div className="product-image">
                 {item.gambar ? (
                   <img
-                    src={`/image/${encodeURIComponent(item.gambar)}`}
+                    src={`/gambar/${encodeURIComponent(item.gambar)}`}
                     alt={item.nama_barang}
                     onError={(e) => {
-                      e.currentTarget.style.display = "none";
+                      const image = e.currentTarget;
+                      if (image.dataset.legacyFallback !== "1") {
+                        image.dataset.legacyFallback = "1";
+                        image.src = `/image/${encodeURIComponent(item.gambar ?? "")}`;
+                      } else {
+                        image.style.display = "none";
+                      }
                     }}
                   />
                 ) : (
