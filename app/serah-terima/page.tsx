@@ -111,6 +111,7 @@ export default function SerahTerimaPage() {
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [nama, setNama] = useState("");
+  const [sessionName, setSessionName] = useState("");
   const [jabatan, setJabatan] = useState("");
   const [tujuan, setTujuan] = useState("");
   const [tanggal, setTanggal] = useState(new Date().toISOString().slice(0, 10));
@@ -143,6 +144,7 @@ export default function SerahTerimaPage() {
       user: { nama: string; jabatan?: string; kategori: string };
     }>("/api/auth/me")
       .then((data) => {
+        setSessionName(data.user.nama);
         setNama(data.user.nama);
         setJabatan(data.user.jabatan ?? "");
         setAdmin(["admin", "creator"].includes(data.user.kategori.toLowerCase()));
@@ -345,42 +347,53 @@ export default function SerahTerimaPage() {
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
+      const left = 14;
+      const right = pageWidth - 14;
 
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(15);
-      doc.text("BUKTI SERAH TERIMA BARANG", pageWidth / 2, 15, { align: "center" });
+      // Logo YOMART berasal dari public/image, tidak disalin ke folder upload barang.
+      try {
+        const logo = new Image();
+        logo.src = "/image/logoyomart.png";
+        await new Promise<void>((resolve, reject) => {
+          logo.onload = () => resolve();
+          logo.onerror = () => reject(new Error("Logo YOMART tidak dapat dimuat."));
+        });
+        doc.addImage(logo, "PNG", left, 5, 55, 13);
+      } catch {
+        // PDF tetap bisa dibuat bila logo tidak tersedia.
+      }
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.text(`HARI : ${day}`, 14, 27);
-      doc.text(`TANGGAL : ${dateText}`, 14, 34);
-      doc.text("DARI : MARKETING", pageWidth - 76, 27);
-      doc.text(`UNTUK : ${item.tujuan.toUpperCase()}`, pageWidth - 76, 34);
+      doc.text(`HARI : ${day}`, left, 23);
+      doc.text(`TANGGAL : ${dateText}`, left, 30);
+      doc.text("DARI : MARKETING", right - 50, 23);
+      doc.text(`UNTUK : ${String(item.tujuan ?? "").toUpperCase()}`, right - 50, 30);
 
       const body = group.rows.flatMap((row) => {
         const branchNames = resolveBranchNames(row.cabang);
-        const locations = branchNames.length ? branchNames : ["-"];
+        const locations = branchNames.length ? branchNames : [""];
         return locations.map((branchName, index) => [
           index === 0 ? row.keperluan : "",
-          index === 0 ? row.jumlah || "-" : "",
+          index === 0 ? String(row.jumlah || "").toUpperCase() : "",
           branchName,
         ]);
       });
 
-      // Ruang kosong seperti format bukti serah-terima cetak.
-      while (body.length < 6) body.push(["", "", ""]);
+      // Tiga baris tabel minimal, mengikuti lembar serah-terima cetak.
+      while (body.length < 3) body.push(["", "", ""]);
 
       autoTable(doc, {
-        startY: 42,
+        startY: 38,
         head: [["Item", "Qty", "Keterangan"]],
         body,
         theme: "grid",
-        margin: { left: 14, right: 14, bottom: 20 },
+        margin: { left, right: 14, bottom: 12 },
         styles: {
           font: "helvetica",
-          fontSize: 10,
-          textColor: [20, 20, 20],
-          lineColor: [30, 30, 30],
+          fontSize: 9.5,
+          textColor: [15, 23, 42],
+          lineColor: [20, 20, 20],
           lineWidth: 0.25,
           cellPadding: 2,
           minCellHeight: 7,
@@ -393,44 +406,36 @@ export default function SerahTerimaPage() {
           halign: "center",
         },
         columnStyles: {
-          0: { cellWidth: 90 },
-          1: { cellWidth: 25, halign: "center" },
+          0: { cellWidth: 60 },
+          1: { cellWidth: 18, halign: "center" },
           2: { cellWidth: "auto" },
         },
       });
 
       const finalY =
-        (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 90;
-      let signY = finalY + 14;
-      if (signY + 38 > pageHeight - 5) {
-        doc.addPage();
-        signY = 25;
-      }
+        (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 65;
+      if (finalY > pageHeight - 62) doc.addPage();
+      const signY = pageHeight - 54;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.text("MENYERAHKAN", 14, signY);
-      doc.text("MENERIMA", pageWidth - 55, signY);
+      doc.text("MENYERAHKAN", left, signY);
+      doc.text("MENERIMA", right - 35, signY);
       doc.setFont("helvetica", "bold");
-      doc.text(item.nama.toUpperCase(), 14, signY + 27);
+      doc.text(String(sessionName || "ADMIN MARKETING").toUpperCase(), left, signY + 27);
       doc.setFont("helvetica", "normal");
-      doc.text(
-        ["admin", "creator"].includes(item.jabatan.toLowerCase())
-          ? "ADM. MARKETING"
-          : item.jabatan.toUpperCase(),
-        14,
-        signY + 33,
-      );
+      doc.text("ADM.MARKETING", left, signY + 33);
 
       const safeName = `${group.key}-${item.tujuan}-${dateText}`
         .replace(/[^a-zA-Z0-9 -]/g, "")
         .replace(/\s+/g, "-");
       doc.save(`Serah-Terima-${safeName}.pdf`);
     } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "Gagal membuat PDF. Periksa dependensi jspdf.",
+      setNotice("");
+      await notify(
+        "Gagal membuat PDF",
+        "error",
+        error instanceof Error ? error.message : "Periksa dependensi PDF dan logo.",
       );
     }
   }
