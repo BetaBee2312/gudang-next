@@ -231,6 +231,9 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
     e.preventDefault();
     setBulkSaving(true);
     try {
+      if (!bulkRows.length) { setToast("Pilih setidaknya satu barang untuk diedit."); return; }
+      if (bulkRows.some((row) => !row.nama_barang.trim() || !Number.isInteger(Number(row.qty_awal)) || Number(row.qty_awal) < 0 || !Number.isInteger(Number(row.qty_terkini)) || Number(row.qty_terkini) < 0)) { setToast("Nama barang wajib diisi dan jumlah stok harus bilangan bulat nol atau lebih."); return; }
+      if (bulkRows.some((row) => row.newImage && (row.newImage.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(row.newImage.type)))) { setToast("Foto harus JPG, PNG, atau WebP dengan ukuran maksimal 5 MB."); return; }
       // Kita gunakan FormData agar bisa mengirim kombinasi JSON string dan file (gambar) massal
       const formData = new FormData();
       
