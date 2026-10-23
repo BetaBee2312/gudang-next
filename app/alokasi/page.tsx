@@ -72,9 +72,36 @@ export default function AlokasiPage() {
           {loading ? <div className="empty-state">Memuat riwayat…</div> : allocationGroups.length === 0 ? <div className="empty-state">Tidak ada riwayat alokasi pada bulan/filter ini.</div> : pageGroups.map(group => (
             <section className="allocation-date-group" key={group.date}>
               <div className="allocation-date-heading">{group.date === "Tanggal tidak diketahui" ? group.date : shortDate(group.date)} <span>{group.rows.length} alokasi</span></div>
-              <div className="table-wrap"><table><thead><tr><th>Tanggal / ID</th><th>Barang</th><th>Cabang</th><th>Pemohon</th><th>Qty</th><th>Status</th>{admin && <th>Aksi</th>}</tr></thead><tbody>
+              <div className="allocation-desktop-table table-wrap"><table><thead><tr><th>Tanggal / ID</th><th>Barang</th><th>Cabang</th><th>Pemohon</th><th>Qty</th><th>Status</th>{admin && <th>Aksi</th>}</tr></thead><tbody>
                 {group.rows.map(i => <tr key={i.id_alokasi}><td><div className="table-name">{shortDate(i.tanggal)}</div><div className="table-muted">{i.id_alokasi}</div></td><td><div className="table-name">{i.nama_barang ?? i.id_barang}</div><div className="table-muted">{i.id_barang}</div></td><td>{i.nama_cabang ?? i.kode_cabang}</td><td>{i.nama_pemohon}</td><td className="font-bold">{Number(i.qty_teralokasi).toLocaleString("id-ID")}</td><td>{badge(i.status)}</td>{admin && <td><div className="flex flex-wrap gap-1">{i.status.toLowerCase() === "pending" && <><button className="btn btn-sm btn-primary" onClick={() => action(i.id_alokasi, "approve")} title="Konfirmasi"><Check size={13}/></button><button className="btn btn-sm btn-danger" onClick={() => action(i.id_alokasi, "reject")} title="Tolak"><X size={13}/></button></>}<button className="btn btn-sm btn-danger" onClick={() => remove(i)} title="Hapus"><Trash2 size={13}/></button></div></td>}</tr>)}
               </tbody></table></div>
+              <div className="allocation-mobile-cards">
+                {group.rows.map(i => (
+                  <article className="allocation-mobile-card" key={i.id_alokasi}>
+                    <div className="allocation-mobile-card-top">
+                      <div className="min-w-0">
+                        <div className="allocation-mobile-product">{i.nama_barang ?? i.id_barang}</div>
+                        <div className="table-muted">{i.id_barang}</div>
+                      </div>
+                      {badge(i.status)}
+                    </div>
+                    <div className="allocation-mobile-qty"><span>Jumlah dialokasikan</span><strong>{Number(i.qty_teralokasi).toLocaleString("id-ID")}</strong></div>
+                    <div className="allocation-mobile-details">
+                      <div><span>Tanggal</span><strong>{shortDate(i.tanggal)}</strong></div>
+                      <div><span>Cabang</span><strong>{i.nama_cabang ?? i.kode_cabang}</strong></div>
+                      <div><span>Pemohon</span><strong>{i.nama_pemohon || "-"}</strong></div>
+                    </div>
+                    <div className="allocation-mobile-id">ID: {i.id_alokasi}</div>
+                    {admin && <div className="allocation-mobile-actions">
+                      {i.status.toLowerCase() === "pending" && <>
+                        <button className="btn btn-sm btn-primary" onClick={() => action(i.id_alokasi, "approve")}><Check size={14}/> Konfirmasi</button>
+                        <button className="btn btn-sm btn-danger" onClick={() => action(i.id_alokasi, "reject")}><X size={14}/> Tolak</button>
+                      </>}
+                      <button className="btn btn-sm btn-danger" onClick={() => remove(i)}><Trash2 size={14}/> Hapus</button>
+                    </div>}
+                  </article>
+                ))}
+              </div>
             </section>
           ))}
           {!loading && allocationGroups.length > 0 && <div className="handover-pagination"><span className="text-xs text-slate-500">Menampilkan grup tanggal {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, allocationGroups.length)} dari {allocationGroups.length}</span><div className="flex items-center gap-2"><button type="button" className="btn btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage(page => Math.max(1,page-1))}>Sebelumnya</button><span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Halaman {currentPage} / {totalPages}</span><button type="button" className="btn btn-sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(page => Math.min(totalPages,page+1))}>Berikutnya</button></div></div>}
