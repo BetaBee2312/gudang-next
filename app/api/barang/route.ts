@@ -53,15 +53,20 @@ async function removeImageIfUnused(filename: unknown, currentId?: string) {
   if (!filename) return;
   const safeName = path.basename(String(filename));
   if (!safeName || safeName === "." || safeName === "..") return;
-  const [rows] = await db.execute<DBRow[]>(
-    currentId
-      ? "SELECT COUNT(*) AS count FROM tb_barang_gc WHERE gambar = ? AND id_barang <> ?"
-      : "SELECT COUNT(*) AS count FROM tb_barang_gc WHERE gambar = ?",
-    currentId ? [safeName, currentId] : [safeName],
-  );
-  if (Number(rows[0]?.count ?? 0) > 0) return;
-  try { await unlink(path.join(uploadDir(), safeName)); } catch { /* Missing files need no cleanup. */ }
+  try {
+    const [rows] = await db.execute<DBRow[]>(
+      currentId
+        ? "SELECT COUNT(*) AS count FROM tb_barang_gc WHERE gambar = ? AND id_barang <> ?"
+        : "SELECT COUNT(*) AS count FROM tb_barang_gc WHERE gambar = ?",
+      currentId ? [safeName, currentId] : [safeName],
+    );
+    if (Number(rows[0]?.count ?? 0) > 0) return;
+    await unlink(path.join(uploadDir(), safeName));
+  } catch {
+    // If checking references fails or the file is missing, leave database changes untouched.
+  }
 }
+
 export async function GET(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
