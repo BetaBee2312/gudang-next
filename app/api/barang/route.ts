@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     }
     const sql = `SELECT id_barang, gambar, nama_barang, kategori, expired, qty_awal, qty_terkini, teralokasi, bulan, plu FROM tb_barang_gc WHERE ${where.join(" AND ")} ORDER BY nama_barang ASC`;
     const [rows] = await db.execute<DBRow[]>(sql, params);
-    return NextResponse.json({ success: true, data: rows }, { headers: { "Cache-Control": "private, max-age=5, stale-while-revalidate=15" } });
+    return NextResponse.json({ success: true, data: rows }, { headers: { "Cache-Control": "private, no-store, max-age=0, must-revalidate" } });
   } catch (error) { return fail(databaseErrorMessage(error), 500); }
 }
 
