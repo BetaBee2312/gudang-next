@@ -26,7 +26,9 @@ export async function POST(request: NextRequest) {
     if (!message) return fail("Pesan tidak boleh kosong.");
     let inventoryContext = "";
     try {
-      const sql = user.division.toLowerCase() === "md"
+      const divisionKey = String(user.division ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
+      const isMD = ["md", "md-ho", "md-d53", "md-dgbg"].includes(divisionKey);
+      const sql = isMD
         ? "SELECT nama_barang, kategori, qty_terkini, expired, plu FROM tb_barang_gc WHERE kategori LIKE '%MD%' ORDER BY nama_barang ASC LIMIT 150"
         : "SELECT nama_barang, kategori, qty_terkini, expired, plu FROM tb_barang_gc ORDER BY nama_barang ASC LIMIT 150";
       const [rows] = await db.execute<DBRow[]>(sql);
