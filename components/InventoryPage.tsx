@@ -74,6 +74,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
+  const [expiryNoticeShown, setExpiryNoticeShown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
   const [selected, setSelected] = useState<string[]>([]);
@@ -118,13 +119,37 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       .catch(() => {});
   }, [habis]);
 
+  // Beri tahu sekali per tab saat ada barang tersedia yang kedaluwarsa dalam 90 hari.
+  useEffect(() => {
+    if (habis || loading || error || expiryNoticeShown) return;
+    const expiring = items.filter((item) => {
+      if (Number(item.qty_terkini) <= 0 || !item.expired) return false;
+      return expiryStatus(item.expired) === "soon";
+    });
+    if (!expiring.length) return;
+    setExpiryNoticeShown(true);
+    void Swal.fire({
+      title: "Pemberitahuan barang akan expired",
+      html: `<div style="text-align:left"><p style="margin-bottom:10px">Ada <strong>${expiring.length} barang</strong> yang akan kedaluwarsa dalam 3 bulan ke depan.</p><ul style="padding-left:20px;max-height:260px;overflow:auto;list-style:disc">${expiring.slice(0, 12).map((item) => `<li style="margin:5px 0"><strong>${item.nama_barang.replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c] ?? c))}</strong> · Expired: ${shortDate(item.expired)} · Stok: ${Number(item.qty_terkini).toLocaleString("id-ID")}</li>`).join("")}${expiring.length > 12 ? `<li>Dan ${expiring.length - 12} barang lainnya.</li>` : ""}</ul></div>`,
+      icon: "warning",
+      confirmButtonText: "Lihat barang",
+      showCancelButton: true,
+      cancelButtonText: "Nanti",
+      confirmButtonColor: "#17453b",
+    }).then((result) => {
+      if (result.isConfirmed) setCategory("__expiring_90_days__");
+    });
+  }, [habis, loading, error, expiryNoticeShown, items]);
+
   const filtered = useMemo(
     () =>
-      items.filter(
-        (item) =>
-          (!category || item.kategori === category) &&
-          `${item.nama_barang} ${item.id_barang} ${item.plu ?? ""}`.toLowerCase().includes(query.toLowerCase())
-      ),
+      items.filter((item) => {
+        const matchesExpiry = category === "__expiring_90_days__"
+          ? expiryStatus(item.expired) === "soon" && Number(item.qty_terkini) > 0
+          : !category || item.kategori === category;
+        return matchesExpiry &&
+          `${item.nama_barang} ${item.id_barang} ${item.plu ?? ""}`.toLowerCase().includes(query.toLowerCase());
+      }),
     [items, query, category]
   );
 
@@ -376,6 +401,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         </label>
         <select className="select-field" style={{ width: "auto", minWidth: 170 }} value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }}>
           <option value="">Semua kategori</option>
+          <option value="__expiring_90_days__">Akan Expired (3 bulan)</option>
           {categories.map((c) => <option key={c}>{c}</option>)}
         </select>
         {admin && (
