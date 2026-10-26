@@ -30,8 +30,9 @@ export async function POST(request: NextRequest) {
       [sessionHash, user.no_karyawan],
     );
     return NextResponse.json({ success: true }, { headers: noStore });
-  } catch {
-    return NextResponse.json({ success: false, message: "Status online belum bisa diperbarui." }, { status: 500, headers: noStore });
+  } catch (error) {
+    console.error("[presence:POST] Gagal memperbarui heartbeat:", error);
+    return NextResponse.json({ success: false, message: "Status online belum bisa diperbarui. Periksa tabel tb_user_presence dan izin database." }, { status: 500, headers: noStore });
   }
 }
 
@@ -56,7 +57,8 @@ export async function GET() {
       no_karyawan: String(row.no_karyawan),
       active_sessions: Number(row.active_sessions ?? 0),
     })) }, { headers: noStore });
-  } catch {
-    return NextResponse.json({ success: false, message: "Gagal membaca status sesi." }, { status: 500, headers: noStore });
+  } catch (error) {
+    console.error("[presence:GET] Gagal membaca status sesi:", error);
+    return NextResponse.json({ success: false, message: "Gagal membaca status sesi. Periksa tabel tb_user_presence dan izin database." }, { status: 500, headers: noStore });
   }
 }
