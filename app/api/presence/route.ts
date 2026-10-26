@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   const user = await requireUser();
   if (isResponse(user)) return user;
-  if (user.kategori.toLowerCase() !== "creator") {
-    return NextResponse.json({ success: false, message: "Hanya Creator yang boleh melihat status sesi seluruh akun." }, { status: 403, headers: noStore });
+  if (!["admin", "creator"].includes(user.kategori.toLowerCase())) {
+    return NextResponse.json({ success: false, message: "Hanya Admin atau Creator yang boleh melihat status sesi seluruh akun." }, { status: 403, headers: noStore });
   }
   try {
     await ensurePresenceTable();
