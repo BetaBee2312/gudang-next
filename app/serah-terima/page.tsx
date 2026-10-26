@@ -772,7 +772,7 @@ export default function SerahTerimaPage() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Cabang</label>
-                      <MultiSearchSelect values={line.cabang} onChange={(values) => setLines(old => old.map((current,lineIndex)=>lineIndex===index?{...current,cabang:values}:current))} placeholder="Cari dan pilih satu atau beberapa cabang…" options={branches.map(branch=>({value:String(branch.kode_cabang),label:branch.nama_cabang,searchText:`${branch.kode_cabang} ${branch.dc_support ?? ""}`,hint:`DC Support: ${branch.dc_support?.trim() || "-"} · Kode: ${branch.singkatan?.trim()||branch.kode_cabang}`}))} />
+                      <MultiSearchSelect values={line.cabang} onChange={(values) => setLines(old => old.map((current,lineIndex)=>lineIndex===index?{...current,cabang:values}:current))} placeholder="Cari dan pilih satu atau beberapa cabang…" options={branches.map(branch=>({value:String(branch.kode_cabang),label:`${branch.nama_cabang} · ${branch.singkatan?.trim() || branch.kode_cabang}${branch.dc_support?.trim() ? ` - ${branch.dc_support.trim()}` : ""}`,searchText:`${branch.kode_cabang} ${branch.singkatan ?? ""} ${branch.dc_support ?? ""}`,hint:`Preview kode: ${branch.singkatan?.trim() || branch.kode_cabang}`}))} />
                     </div>
                   </div>
                 </div>
