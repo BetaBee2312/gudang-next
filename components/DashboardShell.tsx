@@ -62,11 +62,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   useEffect(() => {
     if (!user) return;
     let active = true;
-    const ping = () => {
-      if (active) fetch("/api/presence", { method: "POST", cache: "no-store", keepalive: true }).catch(() => {});
+    const ping = async () => {
+      if (!active) return;
+      try {
+        const response = await fetch("/api/presence", { method: "POST", cache: "no-store", keepalive: true });
+        if (response.status === 401) {
+          cachedSession = null;
+          setUser(null);
+          router.replace("/login");
+        }
+      } catch {
+        // Percobaan berikutnya akan mengulang heartbeat jika koneksi sempat gagal.
+      }
     };
-    ping();
-    const timer = window.setInterval(ping, 30_000);
+    void ping();
+    const timer = window.setInterval(() => void ping(), 20_000);
     const onVisible = () => { if (document.visibilityState === "visible") ping(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
