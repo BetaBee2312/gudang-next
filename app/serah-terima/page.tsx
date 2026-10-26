@@ -344,7 +344,7 @@ export default function SerahTerimaPage() {
 
       const item = group.head;
       const { day, dateText } = getDateParts(item.tanggal);
-      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const left = 14;
