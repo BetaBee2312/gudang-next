@@ -46,16 +46,38 @@ function MultiSearchSelect<T extends string>({ values, onChange, options, placeh
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const selected = options.filter((option) => values.includes(option.value));
-  const filtered = options.filter((option) => !values.includes(option.value) && `${option.label} ${option.searchText ?? ""} ${option.hint ?? ""}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 20);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = options.filter((option) => !values.includes(option.value) && `${option.label} ${option.searchText ?? ""} ${option.hint ?? ""}`.toLowerCase().includes(normalizedQuery)).slice(0, 20);
+  const alreadySelected = values.some((value) => String(value).trim().toLowerCase() === normalizedQuery);
+  const matchingOptionExists = options.some((option) => `${option.label} ${option.searchText ?? ""}`.toLowerCase().includes(normalizedQuery));
+  const canAddCustom = normalizedQuery.length > 0 && !alreadySelected && !matchingOptionExists;
+
+  function addCustom() {
+    const customName = query.trim().replace(/\s+/g, " ");
+    if (!customName || values.some((value) => String(value).trim().toLowerCase() === customName.toLowerCase())) return;
+    onChange([...values, customName as T]);
+    setQuery("");
+    setOpen(false);
+  }
+
   return <div className="search-select">
     <div className="multi-select-control" onClick={() => setOpen(true)}>
       {selected.map((option) => <button type="button" key={option.value} className="multi-select-chip" onClick={(event) => { event.stopPropagation(); onChange(values.filter((value) => value !== option.value)); }} title={`Hapus ${option.label}`}>
         <span>{option.label}</span><span aria-hidden="true">×</span>
       </button>)}
-      <input className="multi-select-input" role="combobox" aria-expanded={open} aria-autocomplete="list" aria-label={placeholder} placeholder={selected.length ? "Cari cabang lain…" : placeholder} value={query} onFocus={() => setOpen(true)} onChange={(event) => { setQuery(event.target.value); setOpen(true); }} onBlur={() => setOpen(false)} onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); if (event.key === "Enter" && open && filtered[0]) { event.preventDefault(); onChange([...values, filtered[0].value]); setQuery(""); } if (event.key === "Backspace" && !query && values.length) onChange(values.slice(0, -1)); }} />
+      {values.filter((value) => !options.some((option) => option.value === value)).map((value) => (
+        <button type="button" key={String(value)} className="multi-select-chip" onClick={(event) => { event.stopPropagation(); onChange(values.filter((item) => item !== value)); }} title={`Hapus ${String(value)}`}>
+          <span>{String(value)}</span><span aria-hidden="true">×</span>
+        </button>
+      ))}
+      <input className="multi-select-input" role="combobox" aria-expanded={open} aria-autocomplete="list" aria-label={placeholder} placeholder={values.length ? "Cari cabang lain…" : placeholder} value={query} onFocus={() => setOpen(true)} onChange={(event) => { setQuery(event.target.value); setOpen(true); }} onBlur={() => setOpen(false)} onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); if (event.key === "Enter" && open) { event.preventDefault(); if (filtered[0]) { onChange([...values, filtered[0].value]); setQuery(""); } else if (canAddCustom) addCustom(); } if (event.key === "Backspace" && !query && values.length) onChange(values.slice(0, -1)); }} />
     </div>
-    {open && <div className="search-select-menu" role="listbox">{filtered.length ? filtered.map((option) => <button type="button" role="option" aria-selected={false} key={option.value} className="search-select-option" onMouseDown={(event) => event.preventDefault()} onClick={() => { onChange([...values, option.value]); setQuery(""); }}><span>{option.label}</span>{option.hint && <small>{option.hint}</small>}</button>) : <div className="search-select-empty">{selected.length ? "Semua hasil yang cocok sudah dipilih." : "Tidak ada hasil yang cocok."}</div>}</div>}
-    {selected.length > 0 && <p className="table-muted mt-1">Kode cabang: <strong>{selected.map((option) => option.value).join(", ")}</strong></p>}
+    {open && <div className="search-select-menu" role="listbox">
+      {filtered.map((option) => <button type="button" role="option" aria-selected={false} key={option.value} className="search-select-option" onMouseDown={(event) => event.preventDefault()} onClick={() => { onChange([...values, option.value]); setQuery(""); }}><span>{option.label}</span>{option.hint && <small>{option.hint}</small>}</button>)}
+      {canAddCustom && <button type="button" role="option" aria-selected={false} className="search-select-option" onMouseDown={(event) => event.preventDefault()} onClick={addCustom}><span>+ Tambahkan “{query.trim()}”</span><small>Hanya untuk dokumen serah-terima, tidak menambah master cabang</small></button>}
+      {filtered.length === 0 && !canAddCustom && <div className="search-select-empty">{selected.length ? "Semua hasil yang cocok sudah dipilih." : "Tidak ada hasil yang cocok."}</div>}
+    </div>}
+    {values.length > 0 && <p className="table-muted mt-1">Pilihan: <strong>{values.map(String).join(", ")}</strong></p>}
   </div>;
 }
 
