@@ -4,10 +4,15 @@ import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { requireUser, isResponse, fail } from "@/lib/http";
 
+function isMDDivision(value: string) {
+  const key = String(value ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
+  return ["md", "md-ho", "md-d53", "md-dgbg"].includes(key);
+}
+
 export async function GET(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
-  if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul alokasi.", 403);
+  if (isMDDivision(user.division)) return fail("Divisi MD tidak memiliki akses ke modul alokasi.", 403);
   try {
     const status = request.nextUrl.searchParams.get("status") ?? "";
     const where: string[] = []; const values: string[] = [];
@@ -21,7 +26,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
-  if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul alokasi.", 403);
+  if (isMDDivision(user.division)) return fail("Divisi MD tidak memiliki akses ke modul alokasi.", 403);
   try {
     const body = await request.json();
     const pemohon = String(body.nama_pemohon ?? user.nama ?? "").trim();
@@ -61,7 +66,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
-  if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul alokasi.", 403);
+  if (isMDDivision(user.division)) return fail("Divisi MD tidak memiliki akses ke modul alokasi.", 403);
   if (!isAdmin(user)) return fail("Aksi ini hanya untuk Admin atau Creator.", 403);
   const body = await request.json();
   const id = String(body.id_alokasi ?? "").trim(); const action = String(body.action ?? "").trim();
@@ -90,7 +95,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
-  if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul alokasi.", 403);
+  if (isMDDivision(user.division)) return fail("Divisi MD tidak memiliki akses ke modul alokasi.", 403);
   if (!isAdmin(user)) return fail("Aksi ini hanya untuk Admin atau Creator.", 403);
   const body = await request.json(); const id = String(body.id_alokasi ?? "").trim();
   if (!id) return fail("ID alokasi tidak valid.");
