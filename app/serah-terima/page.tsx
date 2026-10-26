@@ -349,6 +349,7 @@ export default function SerahTerimaPage() {
       const pageHeight = doc.internal.pageSize.getHeight();
       const left = 14;
       const right = pageWidth - 14;
+      const contentWidth = right - left;
 
       // Render logo pada kanvas putih agar area transparan tidak menjadi hitam di PDF.
       try {
@@ -377,8 +378,8 @@ export default function SerahTerimaPage() {
       doc.setFontSize(10);
       doc.text(`HARI : ${day}`, left, 23);
       doc.text(`TANGGAL : ${dateText}`, left, 30);
-      doc.text("DARI : MARKETING", right - 50, 23);
-      doc.text(`UNTUK : ${String(item.tujuan ?? "").toUpperCase()}`, right - 50, 30);
+      doc.text("DARI : MARKETING", right, 23, { align: "right" });
+      doc.text(`UNTUK : ${String(item.tujuan ?? "").toUpperCase()}`, right, 30, { align: "right" });
 
       const body = group.rows.flatMap((row) => {
         const branchNames = resolveBranchNames(row.cabang);
@@ -391,7 +392,6 @@ export default function SerahTerimaPage() {
       });
 
       // Sisakan tiga baris kosong untuk penambahan alokasi mendadak secara manual.
-      // Selalu tambahkan tiga baris kosong, bukan hanya melengkapi jumlah baris menjadi tiga.
       body.push(["", "", ""], ["", "", ""], ["", "", ""]);
 
       autoTable(doc, {
@@ -399,16 +399,18 @@ export default function SerahTerimaPage() {
         head: [["Item", "Qty", "Keterangan"]],
         body,
         theme: "grid",
-        margin: { left, right: 14, bottom: 12 },
+        margin: { left, right: 14, bottom: 16 },
+        tableWidth: contentWidth,
         styles: {
           font: "helvetica",
-          fontSize: 9.5,
+          fontSize: 8.5,
           textColor: [15, 23, 42],
           lineColor: [20, 20, 20],
           lineWidth: 0.25,
-          cellPadding: 2,
-          minCellHeight: 7,
+          cellPadding: 1.6,
+          minCellHeight: 6.5,
           valign: "middle",
+          overflow: "linebreak",
         },
         headStyles: {
           fillColor: [255, 255, 255],
@@ -417,27 +419,33 @@ export default function SerahTerimaPage() {
           halign: "center",
         },
         columnStyles: {
-          0: { cellWidth: 60 },
-          1: { cellWidth: 18, halign: "center" },
+          0: { cellWidth: 52 },
+          1: { cellWidth: 20, halign: "center" },
           2: { cellWidth: "auto" },
         },
       });
 
       const finalY =
         (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 65;
-      // Posisi tanda tangan dibuat tetap. Bila tabel terlalu panjang, gunakan halaman berikutnya
-      // agar jarak tanda tangan dari tepi bawah tidak berubah-ubah.
-      if (finalY > pageHeight - 62) doc.addPage();
-      const signY = pageHeight - 68;
+      // Tanda tangan mengikuti tabel agar tidak terpisah ke halaman lain tanpa alasan.
+      const signBlockHeight = 30;
+      let signY = finalY + 12;
+      if (signY + signBlockHeight > pageHeight - 10) {
+        doc.addPage();
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(`DOKUMEN SERAH TERIMA · ${group.key}`, left, 14);
+        signY = 35;
+      }
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.text("MENYERAHKAN", left, signY);
-      doc.text("MENERIMA", right - 35, signY);
+      doc.text("MENERIMA", right, signY, { align: "right" });
       doc.setFont("helvetica", "bold");
-      doc.text(String(sessionName || "ADMIN MARKETING").toUpperCase(), left, signY + 27);
+      doc.text(String(sessionName || "ADMIN MARKETING").toUpperCase(), left, signY + 22);
       doc.setFont("helvetica", "normal");
-      doc.text("ADM.MARKETING", left, signY + 33);
+      doc.text("ADM.MARKETING", left, signY + 28);
 
       const safeName = `${group.key}-${item.tujuan}-${dateText}`
         .replace(/[^a-zA-Z0-9 -]/g, "")
