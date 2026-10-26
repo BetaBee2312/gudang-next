@@ -17,9 +17,10 @@ import {
 } from "lucide-react";
 
 type Branch = {
-  kode_cabang: string | number; // Menambahkan union number untuk jaga-jaga dari respons API
+  kode_cabang: string | number;
   nama_cabang: string;
   singkatan?: string;
+  dc_support?: string | null;
 };
 
 type Handover = {
@@ -331,7 +332,9 @@ export default function SerahTerimaPage() {
       .map((code) => {
         // Mengubah kode branch API menjadi string saat perbandingan agar cocok
         const branch = branches.find((b) => String(b.kode_cabang) === code);
-        return branch ? (abbreviated ? (branch.singkatan?.trim() || branch.nama_cabang) : branch.nama_cabang) : code;
+        if (!branch) return code;
+        const name = abbreviated ? (branch.singkatan?.trim() || branch.nama_cabang) : branch.nama_cabang;
+        return branch.dc_support?.trim() ? `${name} · ${branch.dc_support.trim()}` : name;
       });
   }
 
@@ -763,7 +766,7 @@ export default function SerahTerimaPage() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Cabang</label>
-                      <MultiSearchSelect values={line.cabang} onChange={(values) => setLines(old => old.map((current,lineIndex)=>lineIndex===index?{...current,cabang:values}:current))} placeholder="Cari dan pilih satu atau beberapa cabang…" options={branches.map(branch=>({value:String(branch.kode_cabang),label:branch.nama_cabang,searchText:String(branch.kode_cabang),hint:`Preview kode: ${branch.singkatan?.trim()||branch.kode_cabang}`}))} />
+                      <MultiSearchSelect values={line.cabang} onChange={(values) => setLines(old => old.map((current,lineIndex)=>lineIndex===index?{...current,cabang:values}:current))} placeholder="Cari dan pilih satu atau beberapa cabang…" options={branches.map(branch=>({value:String(branch.kode_cabang),label:branch.nama_cabang,searchText:`${branch.kode_cabang} ${branch.dc_support ?? ""}`,hint:`DC Support: ${branch.dc_support?.trim() || "-"} · Kode: ${branch.singkatan?.trim()||branch.kode_cabang}`}))} />
                     </div>
                   </div>
                 </div>
