@@ -23,7 +23,7 @@ const nav = [
 ];
 const titles: Record<string, string> = { "/barang": "Daftar Barang", "/stok-habis": "Stok Habis / MD", "/alokasi": "Alokasi Barang", "/serah-terima": "Serah Terima", "/cabang": "Daftar Cabang", "/akun": "Akun Terdaftar", "/chat-ai": "Gudang Marketing AI", "/profil": "Profil Saya" };
 function normalizedDivision(value: string) {
-  const key = String(value ?? "").trim().toLowerCase().replace(/[\\s_]+/g, "-");
+  const key = String(value ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
   if (["marketing", "mkt"].includes(key)) return "MKT";
   if (key === "md") return "MD";
   if (["marketing-ho", "mkt-ho"].includes(key)) return "MKT-HO";
