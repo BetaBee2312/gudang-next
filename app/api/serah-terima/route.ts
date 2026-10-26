@@ -3,10 +3,15 @@ import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { requireUser, isResponse, fail } from "@/lib/http";
 
+function isMDDivision(value: string) {
+  const key = String(value ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
+  return ["md", "md-ho", "md-d53", "md-dgbg"].includes(key);
+}
+
 export async function GET() {
   const user = await requireUser();
   if (isResponse(user)) return user;
-  if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul serah-terima.", 403);
+  if (isMDDivision(user.division)) return fail("Divisi MD tidak memiliki akses ke modul serah-terima.", 403);
   try {
     const [rows] = await db.execute<DBRow[]>("SELECT id, nama, jabatan, tujuan, tanggal, keperluan, jumlah, cabang FROM tb_serah_terima ORDER BY tanggal DESC, id ASC LIMIT 1500");
     return NextResponse.json({ success: true, data: rows });
@@ -15,7 +20,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
-  if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul serah-terima.", 403);
+  if (isMDDivision(user.division)) return fail("Divisi MD tidak memiliki akses ke modul serah-terima.", 403);
   try {
     const body = await request.json();
     const nama = String(body.nama ?? user.nama ?? "").trim(); const jabatan = String(body.jabatan ?? user.jabatan ?? "").trim();
@@ -60,7 +65,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const user = await requireUser();
   if (isResponse(user)) return user;
-  if (user.division.toLowerCase() === "md") return fail("Divisi MD tidak memiliki akses ke modul serah-terima.", 403);
+  if (isMDDivision(user.division)) return fail("Divisi MD tidak memiliki akses ke modul serah-terima.", 403);
   if (!isAdmin(user)) return fail("Hanya Admin atau Creator yang bisa menghapus serah-terima.", 403);
   try {
     const body = await request.json(); const id = String(body.id ?? "").trim();
