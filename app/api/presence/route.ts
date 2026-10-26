@@ -4,7 +4,7 @@ import { db, type DBRow } from "@/lib/db";
 import { requireUser, isResponse } from "@/lib/http";
 
 export const runtime = "nodejs";
-const noStore = { "Cache-Control": "no-store, max-age=0" };
+const noStore = { "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate" };
 
 async function ensurePresenceTable() {
   await db.execute(`
