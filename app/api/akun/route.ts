@@ -5,6 +5,15 @@ import path from "node:path";
 import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { requireUser, isResponse, fail } from "@/lib/http";
 
+function normalizeDivision(value: unknown): string {
+  const key = String(value ?? "MKT").trim().toLowerCase().replace(/[\\s_]+/g, "-");
+  if (["marketing", "mkt"].includes(key)) return "MKT";
+  if (key === "md") return "MD";
+  if (["marketing-ho", "mkt-ho"].includes(key)) return "MKT-HO";
+  if (key === "md-ho") return "MD-HO";
+  return String(value ?? "MKT").trim() || "MKT";
+}
+
 export async function GET() {
   const user = await requireUser();
   if (isResponse(user)) return user;
@@ -25,7 +34,7 @@ export async function POST(request: NextRequest) {
     const b = await request.json();
     const no = String(b.no_karyawan ?? "").trim(); const nama = String(b.nama ?? "").trim();
     const password = String(b.password ?? ""); const jabatan = String(b.jabatan ?? "").trim();
-    const division = String(b.division ?? "Marketing").trim(); const kategori = String(b.kategori ?? "User").trim();
+    const division = normalizeDivision(b.division ?? "MKT"); const kategori = String(b.kategori ?? "User").trim();
     if (!no || !nama || password.length < 6 || !jabatan || !division || !kategori) return fail("Lengkapi seluruh data. Password minimal 6 karakter.");
     const hash = await bcrypt.hash(password, 12);
     await db.execute("INSERT INTO tb_akun (no_karyawan, nama, jabatan, division, kategori, password, profilepic) VALUES (?, ?, ?, ?, ?, ?, NULL)", [no, nama, jabatan, division, kategori, hash]);
@@ -46,7 +55,7 @@ export async function PATCH(request: NextRequest) {
     const updates: string[] = []; const values: any[] = [];
     if (Object.hasOwn(b, "nama")) { updates.push("nama = ?"); values.push(name); }
     if (Object.hasOwn(b, "jabatan") && admin) { updates.push("jabatan = ?"); values.push(String(b.jabatan).trim()); }
-    if (Object.hasOwn(b, "division") && admin) { updates.push("division = ?"); values.push(String(b.division).trim()); }
+    if (Object.hasOwn(b, "division") && admin) { updates.push("division = ?"); values.push(normalizeDivision(b.division)); }
     if (Object.hasOwn(b, "kategori") && admin) { updates.push("kategori = ?"); values.push(String(b.kategori).trim()); }
     if (Object.hasOwn(b, "profilepic") && admin) { updates.push("profilepic = ?"); values.push(String(b.profilepic ?? "").trim() || null); }
     if (b.password) {
