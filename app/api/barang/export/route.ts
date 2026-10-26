@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
     const month = /^\d{1,2}$/.test(monthRaw ?? "") && Number(monthRaw) >= 1 && Number(monthRaw) <= 12 ? Number(monthRaw) : new Date().getMonth() + 1;
     const requestedFilter = (request.nextUrl.searchParams.get("filter") ?? "").toLowerCase();
     const requestedScope = (request.nextUrl.searchParams.get("scope") ?? "").toLowerCase();
-    const scopeMD = requestedScope === "md" || user.division.toLowerCase() === "md";
+    const divisionKey = String(user.division ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
+    const scopeMD = requestedScope === "md" || ["md", "md-ho", "md-d53", "md-dgbg"].includes(divisionKey);
     let categoryFilter = allowedCategories.includes(requestedFilter) ? requestedFilter : "";
     if (scopeMD && categoryFilter && !mdCategories.includes(categoryFilter)) categoryFilter = "";
     const categoryWhere = categoryFilter ? " AND LOWER(b.kategori) = ?" : scopeMD ? ` AND LOWER(b.kategori) IN (${mdCategories.map(() => "?").join(",")})` : "";
