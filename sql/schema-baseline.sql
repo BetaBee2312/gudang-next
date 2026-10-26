@@ -80,6 +80,14 @@ CREATE TABLE IF NOT EXISTS tb_barang_arsip (
   INDEX idx_arsip_bulan (bulan)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Status online akun. Dibaca dan diperbarui oleh /api/presence.
+CREATE TABLE IF NOT EXISTS tb_user_presence (
+  session_hash CHAR(64) NOT NULL PRIMARY KEY,
+  no_karyawan VARCHAR(100) NOT NULL,
+  last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_presence_user_seen (no_karyawan, last_seen)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Tabel tambahan untuk riwayat chatbot Next.js. Tidak mengubah tb_chat_history lama.
 CREATE TABLE IF NOT EXISTS tb_chat_messages (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
