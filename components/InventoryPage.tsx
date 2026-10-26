@@ -74,7 +74,6 @@ function expiryStatus(value?: string | null): "expired" | "soon" | "safe" | "unk
 
 
 export default function InventoryPage({ habis = false }: { habis?: boolean }) {
-  const cacheKey = `barang:${habis ? "habis" : "tersedia"}`;
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -102,7 +101,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
 
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
 
-  async function load(options: { force?: boolean } = {}) {
+  async function load() {
     // Jangan gunakan cache bersama antar-akun. Selalu ambil data yang sudah disaring server untuk sesi aktif.
     setLoading(true);
     setError("");
@@ -226,7 +225,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       setToast("");
       await notify(editing ? "Barang diperbarui" : "Barang berhasil ditambahkan", "success");
       invalidateInventoryCache();
-      await load({ force: true });
+      await load();
     } catch (e) {
       setToast("");
       await notify("Gagal menyimpan barang", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
@@ -260,7 +259,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       setToast("");
       await notify("Barang terpilih berhasil dihapus", "success");
       invalidateInventoryCache();
-      await load({ force: true });
+      await load();
     } catch (e) {
       setToast("");
       await notify("Gagal menghapus barang", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
@@ -323,7 +322,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       setToast("");
       await notify("Edit massal berhasil disimpan", "success", d.message);
       invalidateInventoryCache();
-      await load({ force: true });
+      await load();
     } catch (e) {
       setToast("");
       await notify("Gagal mengedit massal", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
@@ -353,7 +352,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       setToast("");
       await notify("Stok berhasil diperbarui", "success", data.message);
       invalidateInventoryCache();
-      await load({ force: true });
+      await load();
     } catch (e) {
       setToast("");
       await notify("Renew stok gagal", "error", e instanceof Error ? e.message : "Terjadi kesalahan.");
@@ -434,7 +433,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
       {error && (
         <div className="toast error">
           {error}{" "}
-          <button className="underline" onClick={() => void load({ force: true })}>
+          <button className="underline" onClick={() => void load()}>
             Coba lagi
           </button>
         </div>
