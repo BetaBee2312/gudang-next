@@ -50,7 +50,7 @@ const categories = ["Marketing", "MD", "Marketing-D53", "MD-D53", "Marketing-DGB
 const emptyForm = { nama_barang: "", kategori: "Marketing", expired: "", qty_awal: "0", qty_terkini: "0", plu: "" };
 
 function getVisibleCategories(division: string): string[] {
-  const normalized = String(division ?? "").trim().toLowerCase().replace(/[\\s_]+/g, "-");
+  const normalized = String(division ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
   if (normalized === "md" || normalized === "md-ho") return categories.filter((value) => value.toLowerCase().startsWith("md"));
   if (normalized.startsWith("md-d53")) return ["MD-D53"];
   if (normalized.startsWith("md-dgbg")) return ["MD-DGBG"];
