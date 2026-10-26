@@ -10,16 +10,12 @@ type Presence = { no_karyawan:string; active_sessions:number };
 const divisions = [
   { value: "MKT", label: "Marketing" },
   { value: "MD", label: "MD" },
-  { value: "MKT-HO", label: "Marketing HO" },
-  { value: "MD-HO", label: "MD HO" },
 ];
 const blank = {no_karyawan:"",nama:"",jabatan:"",division:"MKT",kategori:"User",password:""};
 function normalizeDivision(value: string) {
   const key = String(value ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
-  if (["marketing", "mkt"].includes(key)) return "MKT";
-  if (key === "md") return "MD";
-  if (["marketing-ho", "mkt-ho"].includes(key)) return "MKT-HO";
-  if (key === "md-ho") return "MD-HO";
+  if (key === "marketing" || key === "mkt" || key.startsWith("marketing-") || key.startsWith("mkt-")) return "MKT";
+  if (key === "md" || key.startsWith("md-")) return "MD";
   return String(value ?? "").trim();
 }
 export default function AkunPage(){
