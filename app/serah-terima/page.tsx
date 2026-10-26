@@ -430,15 +430,21 @@ export default function SerahTerimaPage() {
 
       const finalY =
         (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 65;
-      // Tanda tangan mengikuti tabel agar tidak terpisah ke halaman lain tanpa alasan.
+      // Letakkan tanda tangan tepat di bawah tabel bila masih muat.
+      // Jika tabel melewati bagian bawah halaman, tambahkan halaman untuk blok tanda tangan.
       const signBlockHeight = 30;
-      let signY = finalY + 12;
-      if (signY + signBlockHeight > pageHeight - 10) {
+      const lastPage = doc.getNumberOfPages();
+      const signYOnCurrentPage = finalY + 12;
+      const requiresSignaturePage = signYOnCurrentPage + signBlockHeight > pageHeight - 10;
+      if (requiresSignaturePage) {
+        doc.setPage(lastPage);
         doc.addPage();
+      }
+      const signY = requiresSignaturePage ? 35 : signYOnCurrentPage;
+      if (requiresSignaturePage) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.text(`DOKUMEN SERAH TERIMA · ${group.key}`, left, 14);
-        signY = 35;
       }
 
       doc.setFont("helvetica", "normal");
