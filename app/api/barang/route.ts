@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     if (search) { where.push("(nama_barang LIKE ? OR id_barang LIKE ? OR plu LIKE ?)"); params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
     if (category) { where.push("kategori = ?"); params.push(category); }
     if (habis) where.push("qty_terkini <= 0"); else where.push("qty_terkini > 0");
-    const division = String(user.division ?? "").trim().toLowerCase().replace(/[\\s_]+/g, "-");
+    const division = String(user.division ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
     if (division === "md" || division === "md-ho") {
       where.push("LOWER(kategori) IN (?, ?, ?)");
       params.push("md", "md-d53", "md-dgbg");
