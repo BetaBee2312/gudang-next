@@ -17,7 +17,7 @@ import {
   Save,
 } from "lucide-react";
 import DashboardShell from "@/components/DashboardShell";
-import { requestJSON, shortDate, toDateInput, getInventoryCache, setInventoryCache, invalidateInventoryCache } from "@/lib/client";
+import { requestJSON, shortDate, toDateInput, invalidateInventoryCache } from "@/lib/client";
 import Swal from "sweetalert2";
 import { notify } from "@/lib/sweetalert";
 
@@ -49,6 +49,14 @@ type BulkRow = {
 const categories = ["Marketing", "MD", "Marketing-D53", "MD-D53", "Marketing-DGBG", "MD-DGBG"];
 const emptyForm = { nama_barang: "", kategori: "Marketing", expired: "", qty_awal: "0", qty_terkini: "0", plu: "" };
 
+function getVisibleCategories(division: string): string[] {
+  const normalized = String(division ?? "").trim().toLowerCase().replace(/[\\s_]+/g, "-");
+  if (normalized === "md" || normalized === "md-ho") return categories.filter((value) => value.toLowerCase().startsWith("md"));
+  if (normalized.startsWith("md-d53")) return ["MD-D53"];
+  if (normalized.startsWith("md-dgbg")) return ["MD-DGBG"];
+  return categories;
+}
+
 function expiryStatus(value?: string | null): "expired" | "soon" | "safe" | "unknown" {
   if (!value) return "unknown";
   const raw = String(value).slice(0, 10);
@@ -67,8 +75,8 @@ function expiryStatus(value?: string | null): "expired" | "soon" | "safe" | "unk
 
 export default function InventoryPage({ habis = false }: { habis?: boolean }) {
   const cacheKey = `barang:${habis ? "habis" : "tersedia"}`;
-  const [items, setItems] = useState<Product[]>(() => getInventoryCache<Product[]>(cacheKey) ?? []);
-  const [loading, setLoading] = useState(() => getInventoryCache<Product[]>(cacheKey) === null);
+  const [items, setItems] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
 
@@ -79,6 +87,8 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
   const pageSize = 15;
   const [selected, setSelected] = useState<string[]>([]);
   const [admin, setAdmin] = useState(false);
+  const [division, setDivision] = useState("");
+  const visibleCategories = getVisibleCategories(division);
 
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -93,18 +103,12 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
 
   async function load(options: { force?: boolean } = {}) {
-    const cached = getInventoryCache<Product[]>(cacheKey);
-    if (cached && !options.force) {
-      setItems(cached);
-      setLoading(false);
-      return;
-    }
-    if (!items.length) setLoading(true);
+    // Jangan gunakan cache bersama antar-akun. Selalu ambil data yang sudah disaring server untuk sesi aktif.
+    setLoading(true);
     setError("");
     try {
       const data = await requestJSON<{ data: Product[] }>(`/api/barang?habis=${habis ? 1 : 0}`);
       setItems(data.data);
-      setInventoryCache(cacheKey, data.data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal memuat barang.");
     } finally {
@@ -114,8 +118,11 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
 
   useEffect(() => {
     load();
-    requestJSON<{ user: { kategori: string } }>("/api/auth/me")
-      .then((d) => setAdmin(["admin", "creator"].includes((d.user?.kategori || "").toLowerCase())))
+    requestJSON<{ user: { kategori: string; division: string } }>("/api/auth/me")
+      .then((d) => {
+        setAdmin(["admin", "creator"].includes((d.user?.kategori || "").toLowerCase()));
+        setDivision(d.user?.division || "");
+      })
       .catch(() => {});
   }, [habis]);
 
@@ -170,7 +177,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
 
   function openAdd() {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, kategori: visibleCategories[0] || emptyForm.kategori });
     setImage(null);
     setModal(true);
   }
@@ -402,7 +409,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         <select className="select-field" style={{ width: "auto", minWidth: 170 }} value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }}>
           <option value="">Semua kategori</option>
           <option value="__expiring_90_days__">Akan Expired (3 bulan)</option>
-          {categories.map((c) => <option key={c}>{c}</option>)}
+          {visibleCategories.map((c) => <option key={c}>{c}</option>)}
         </select>
         {admin && (
           <label className="inventory-select-all">
@@ -590,7 +597,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
                     value={form.kategori}
                     onChange={(e) => setForm({ ...form, kategori: e.target.value })}
                   >
-                    {categories.map((c) => (
+                    {visibleCategories.map((c) => (
                       <option key={c}>{c}</option>
                     ))}
                   </select>
@@ -692,7 +699,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
                     <div className="form-group"><label className="form-label">Nama barang</label><input className="field" value={row.nama_barang} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, nama_barang: e.target.value } : v))} required /></div>
                     <div className="form-group"><label className="form-label">Foto baru (opsional)</label><input type="file" accept="image/jpeg,image/png,image/webp" className="field bulk-image-input" onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, newImage: e.target.files?.[0] ?? null } : v))} />{row.newImage && <div className="bulk-file-name">{row.newImage.name}</div>}</div>
                     <div className="bulk-item-grid">
-                      <div className="form-group"><label className="form-label">Kategori</label><select className="select-field" value={row.kategori} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, kategori: e.target.value } : v))}>{categories.map((cat) => <option key={cat}>{cat}</option>)}</select></div>
+                      <div className="form-group"><label className="form-label">Kategori</label><select className="select-field" value={row.kategori} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, kategori: e.target.value } : v))}>{visibleCategories.map((cat) => <option key={cat}>{cat}</option>)}</select></div>
                       <div className="form-group"><label className="form-label">Tanggal expired</label><input type="date" className="field" value={row.expired} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, expired: e.target.value } : v))} /></div>
                       <div className="form-group"><label className="form-label">Stok awal</label><input type="number" min="0" className="field" value={row.qty_awal} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, qty_awal: e.target.value } : v))} required /></div>
                       <div className="form-group"><label className="form-label">Stok terkini</label><input type="number" min="0" className="field" value={row.qty_terkini} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, qty_terkini: e.target.value } : v))} required /></div>
