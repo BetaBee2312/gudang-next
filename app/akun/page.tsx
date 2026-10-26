@@ -15,7 +15,7 @@ const divisions = [
 ];
 const blank = {no_karyawan:"",nama:"",jabatan:"",division:"MKT",kategori:"User",password:""};
 function normalizeDivision(value: string) {
-  const key = String(value ?? "").trim().toLowerCase().replace(/[\\s_]+/g, "-");
+  const key = String(value ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
   if (["marketing", "mkt"].includes(key)) return "MKT";
   if (key === "md") return "MD";
   if (["marketing-ho", "mkt-ho"].includes(key)) return "MKT-HO";
