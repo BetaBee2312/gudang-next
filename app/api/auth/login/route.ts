@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       profilepic: row.profilepic ? String(row.profilepic) : null,
     };
     const token = await createSession(user);
-    const response = NextResponse.json({ success: true, user, redirect: user.division === "MD" ? "/stok-habis" : "/barang" });
+    const response = NextResponse.json({ success: true, user, redirect: ["md", "md-ho", "md-d53", "md-dgbg"].includes(String(user.division ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-")) ? "/stok-habis" : "/barang" });
     response.cookies.set("gudang_session", token, sessionCookieOptions());
     return response;
   } catch (error) {
