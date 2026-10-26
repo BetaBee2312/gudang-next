@@ -6,7 +6,7 @@ import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { requireUser, isResponse, fail } from "@/lib/http";
 
 function normalizeDivision(value: unknown): string {
-  const key = String(value ?? "MKT").trim().toLowerCase().replace(/[\\s_]+/g, "-");
+  const key = String(value ?? "MKT").trim().toLowerCase().replace(/[\s_]+/g, "-");
   if (["marketing", "mkt"].includes(key)) return "MKT";
   if (key === "md") return "MD";
   if (["marketing-ho", "mkt-ho"].includes(key)) return "MKT-HO";
