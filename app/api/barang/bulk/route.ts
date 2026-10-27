@@ -171,6 +171,7 @@ export async function POST(request: NextRequest) {
         "expired = ?",
         "qty_awal = ?",
         "qty_terkini = ?",
+        "bulan = ?",
         "plu = ?",
       ];
       const values: any[] = [
@@ -179,6 +180,7 @@ export async function POST(request: NextRequest) {
         item.expired,
         item.qtyInitial,
         item.qtyCurrent,
+        new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date()),
         item.plu,
       ];
 
