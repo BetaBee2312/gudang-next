@@ -175,12 +175,15 @@ export default function SerahTerimaPage() {
       .catch(() => undefined);
   }, []);
 
-  // Kelompokkan berdasarkan ID dokumen, yaitu ID tanpa huruf suffix a/b/c.
+  // Satukan seluruh transaksi dengan tanggal dan tujuan yang sama.
+  // ID dokumen tetap dipertahankan pada baris data, tetapi bukan kunci tampilan.
   const groups = useMemo<HandoverGroup[]>(() => {
     const map = new Map<string, Handover[]>();
 
     for (const item of items) {
-      const key = getDocumentId(item.id);
+      const normalizedDate = String(item.tanggal ?? "").slice(0, 10);
+      const normalizedTujuan = String(item.tujuan ?? "").trim().toLocaleLowerCase("id-ID");
+      const key = `${normalizedDate}::${normalizedTujuan}`;
       const groupRows = map.get(key) ?? [];
       groupRows.push(item);
       map.set(key, groupRows);
@@ -193,7 +196,7 @@ export default function SerahTerimaPage() {
       })
       .sort((a, b) => {
         const dateCompare = String(b.head.tanggal).localeCompare(String(a.head.tanggal));
-        return dateCompare || b.key.localeCompare(a.key);
+        return dateCompare || a.head.tujuan.localeCompare(b.head.tujuan);
       });
   }, [items]);
 
@@ -585,7 +588,7 @@ export default function SerahTerimaPage() {
                         <span className="font-medium">Tujuan:</span> 
                         <span className="text-slate-700">{group.head.tujuan}</span>
                         <span className="mx-2 text-slate-300">•</span>
-                        <span className="text-xs text-slate-400">ID: {group.key}</span>
+                        <span className="text-xs text-slate-400">ID: {[...new Set(group.rows.map((row) => getDocumentId(row.id)))].join(", ")}</span>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -601,7 +604,7 @@ export default function SerahTerimaPage() {
                       <button
                         className="px-4 py-1.5 bg-[#10b981] text-white text-sm font-medium rounded-lg hover:bg-[#059669] transition-colors flex items-center gap-1.5"
                         onClick={() => exportPDF(group)}
-                        title="Unduh satu PDF untuk seluruh ID dokumen ini"
+                        title="Unduh satu PDF untuk seluruh data dengan tanggal dan tujuan yang sama"
                       >
                         <FileDown size={14} /> Print PDF
                       </button>
