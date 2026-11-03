@@ -8,9 +8,11 @@ import { requireUser, isResponse, fail } from "@/lib/http";
 function normalizeDivision(value: unknown): string {
   const key = String(value ?? "MKT").trim().toLowerCase().replace(/[\s_]+/g, "-");
   if (key === "marketing" || key === "mkt" || key.startsWith("marketing-") || key.startsWith("mkt-")) return "MKT";
-  if (key === "md" || key.startsWith("md-")) return "MD";
+  if (key === "md" || key === "md-ho") return "MD";
+  if (["md-food", "md-nonfood", "md-d53", "md-dgbg"].includes(key)) return key.toUpperCase();
   return String(value ?? "").trim();
 }
+const allowedDivisions = ["MKT", "MD", "MD-FOOD", "MD-NONFOOD", "MD-D53", "MD-DGBG"];
 
 export async function GET() {
   const user = await requireUser();
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
     const password = String(b.password ?? ""); const jabatan = String(b.jabatan ?? "").trim();
     const division = normalizeDivision(b.division ?? "MKT"); const kategori = String(b.kategori ?? "User").trim();
     if (!no || !nama || password.length < 6 || !jabatan || !division || !kategori) return fail("Lengkapi seluruh data. Password minimal 6 karakter.");
-    if (!["MKT", "MD"].includes(division)) return fail("Divisi hanya boleh Marketing (MKT) atau MD.");
+    if (!allowedDivisions.includes(division)) return fail("Divisi harus Marketing, MD-Food, atau MD-Nonfood.");
     const hash = await bcrypt.hash(password, 12);
     await db.execute("INSERT INTO tb_akun (no_karyawan, nama, jabatan, division, kategori, password, profilepic) VALUES (?, ?, ?, ?, ?, ?, NULL)", [no, nama, jabatan, division, kategori, hash]);
     return NextResponse.json({ success: true, message: "Akun berhasil dibuat." }, { status: 201 });
@@ -49,7 +51,7 @@ export async function PATCH(request: NextRequest) {
     const target = String(b.no_karyawan ?? user.no_karyawan).trim();
     const admin = true;
     const name = String(b.nama ?? "").trim();
-    if (Object.hasOwn(b, "division") && !["MKT", "MD"].includes(normalizeDivision(b.division))) return fail("Divisi hanya boleh Marketing (MKT) atau MD.");
+    if (Object.hasOwn(b, "division") && !allowedDivisions.includes(normalizeDivision(b.division))) return fail("Divisi harus Marketing, MD-Food, atau MD-Nonfood.");
     if (Object.hasOwn(b, "nama") && !name) return fail("Nama wajib diisi.");
     if (name.length > 150) return fail("Nama maksimal 150 karakter.");
     const updates: string[] = []; const values: any[] = [];
