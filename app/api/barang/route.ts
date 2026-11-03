@@ -8,7 +8,7 @@ import { isAdmin } from "@/lib/auth";
 import { requireUser, isResponse, fail } from "@/lib/http";
 
 export const runtime = "nodejs";
-const PREFIX: Record<string, string> = { Marketing: "MKT", MD: "MD", "MD-FOOD": "MD-FOOD", "MD-NONFOOD": "MD-NONFOOD", "Marketing-D53": "MKT-D53", "MD-D53": "MD-D53", "Marketing-DGBG": "MKT-GBG", "MD-DGBG": "MD-GBG" };
+const PREFIX: Record<string, string> = { Marketing: "MKT", MD: "MD", "MD-FOOD": "MD-FOOD", "MD-FOOD-D53": "MD-FOOD-D53", "MD-NONFOOD": "MD-NONFOOD", "MD-NONFOOD-D53": "MD-NONFOOD-D53", "Marketing-D53": "MKT-D53", "MD-D53": "MD-D53", "Marketing-DGBG": "MKT-GBG", "MD-DGBG": "MD-GBG" };
 const uploadDir = () => path.join(process.cwd(), "public", "image");
 const MAX_UPLOAD = 20 * 1024 * 1024;
 const TARGET_IMAGE = 900 * 1024;
@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
     const mdCategoryScopes: Record<string, string[]> = {
       md: ["md", "md-food", "md-nonfood", "md-d53", "md-dgbg"],
       "md-ho": ["md", "md-food", "md-nonfood", "md-d53", "md-dgbg"],
-      "md-food": ["md-food"],
-      "md-nonfood": ["md-nonfood"],
+      "md-food": ["md-food", "md-food-d53"],
+      "md-nonfood": ["md-nonfood", "md-nonfood-d53"],
       "md-d53": ["md-d53"],
       "md-dgbg": ["md-dgbg"],
     };
