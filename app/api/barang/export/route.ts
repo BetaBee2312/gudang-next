@@ -7,8 +7,8 @@ import { db, type DBRow } from "@/lib/db";
 import { requireUser, isResponse, fail } from "@/lib/http";
 
 export const runtime = "nodejs";
-const allowedCategories = ["marketing", "md", "marketing-d53", "md-d53", "marketing-dgbg", "md-dgbg"];
-const mdCategories = ["md", "md-d53", "md-dgbg"];
+const allowedCategories = ["marketing", "md", "md-food", "md-nonfood", "marketing-d53", "md-d53", "marketing-dgbg", "md-dgbg"];
+const mdCategories = ["md", "md-food", "md-nonfood", "md-d53", "md-dgbg"];
 
 function parseExcelDate(value: unknown): Date | "" {
   if (!value) return "";
@@ -49,11 +49,32 @@ export async function GET(request: NextRequest) {
     const requestedFilter = (request.nextUrl.searchParams.get("filter") ?? "").toLowerCase();
     const requestedScope = (request.nextUrl.searchParams.get("scope") ?? "").toLowerCase();
     const divisionKey = String(user.division ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
-    const scopeMD = requestedScope === "md" || ["md", "md-ho", "md-d53", "md-dgbg"].includes(divisionKey);
-    let categoryFilter = allowedCategories.includes(requestedFilter) ? requestedFilter : "";
-    if (scopeMD && categoryFilter && !mdCategories.includes(categoryFilter)) categoryFilter = "";
-    const categoryWhere = categoryFilter ? " AND LOWER(b.kategori) = ?" : scopeMD ? ` AND LOWER(b.kategori) IN (${mdCategories.map(() => "?").join(",")})` : "";
-    const categoryParams: string[] = categoryFilter ? [categoryFilter] : scopeMD ? [...mdCategories] : [];
+    const mdDivisionScopes: Record<string, string[]> = {
+      md: mdCategories,
+      "md-ho": mdCategories,
+      "md-food": ["md-food"],
+      "md-nonfood": ["md-nonfood"],
+      "md-d53": ["md-d53"],
+      "md-dgbg": ["md-dgbg"],
+    };
+    const hasMdDivisionScope = Object.hasOwn(mdDivisionScopes, divisionKey) || divisionKey.startsWith("md-");
+    if (hasMdDivisionScope && !Object.hasOwn(mdDivisionScopes, divisionKey)) {
+      return fail("Divisi MD akun belum dikenali. Perbarui divisi akun terlebih dahulu.", 403);
+    }
+    const scopeMD = requestedScope === "md" || hasMdDivisionScope;
+    const scopedMdCategories = mdDivisionScopes[divisionKey] ?? mdCategories;
+    if (requestedFilter && !allowedCategories.includes(requestedFilter)) return fail("Filter kategori tidak valid.");
+    const categoryFilter = requestedFilter || "";
+    if (hasMdDivisionScope && categoryFilter && !scopedMdCategories.includes(categoryFilter)) {
+      return fail("Kategori barang tidak sesuai dengan divisi akun.", 403);
+    }
+    const activeMdCategories = hasMdDivisionScope ? scopedMdCategories : mdCategories;
+    const categoryWhere = categoryFilter
+      ? " AND LOWER(b.kategori) = ?"
+      : scopeMD
+        ? ` AND LOWER(b.kategori) IN (${activeMdCategories.map(() => "?").join(",")})`
+        : "";
+    const categoryParams: string[] = categoryFilter ? [categoryFilter] : scopeMD ? [...activeMdCategories] : [];
 
     const [branchRows] = await db.execute<DBRow[]>(
       `SELECT DISTINCT c.nama_cabang FROM tb_list_alokasi a LEFT JOIN tb_cabang c ON a.kode_cabang = c.kode_cabang LEFT JOIN tb_barang_gc b ON a.id_barang = b.id_barang WHERE c.nama_cabang IS NOT NULL AND MONTH(a.tanggal) = ? AND YEAR(a.tanggal) = ?${categoryWhere} ORDER BY c.nama_cabang ASC`,
@@ -69,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     let itemWhere = ""; let itemParams: string[] = [];
     if (categoryFilter) { itemWhere = " WHERE LOWER(kategori) = ?"; itemParams = [categoryFilter]; }
-    else if (scopeMD) { itemWhere = ` WHERE LOWER(kategori) IN (${mdCategories.map(() => "?").join(",")})`; itemParams = [...mdCategories]; }
+    else if (scopeMD) { itemWhere = ` WHERE LOWER(kategori) IN (${activeMdCategories.map(() => "?").join(",")})`; itemParams = [...activeMdCategories]; }
     const [items] = await db.execute<DBRow[]>(`SELECT id_barang, nama_barang, kategori, expired, qty_awal, qty_terkini, gambar, plu FROM tb_barang_gc${itemWhere} ORDER BY nama_barang ASC`, itemParams);
 
     const wb = new ExcelJS.Workbook(); wb.creator = "Gudang Marketing"; wb.created = new Date();
