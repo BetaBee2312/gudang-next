@@ -46,13 +46,13 @@ type BulkRow = {
   newImage?: File | null; 
 };
 
-const categories = ["Marketing", "MD", "MD-FOOD", "MD-NONFOOD", "Marketing-D53", "MD-D53", "Marketing-DGBG", "MD-DGBG"];
+const categories = ["Marketing", "MD", "MD-FOOD", "MD-FOOD-D53", "MD-NONFOOD", "MD-NONFOOD-D53", "Marketing-D53", "MD-D53", "Marketing-DGBG", "MD-DGBG"];
 const emptyForm = { nama_barang: "", kategori: "Marketing", expired: "", qty_awal: "0", qty_terkini: "0", plu: "" };
 
 function getVisibleCategories(division: string): string[] {
   const normalized = String(division ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
-  if (normalized === "md-food") return ["MD-FOOD"];
-  if (normalized === "md-nonfood") return ["MD-NONFOOD"];
+  if (normalized === "md-food") return ["MD-FOOD", "MD-FOOD-D53"];
+  if (normalized === "md-nonfood") return ["MD-NONFOOD", "MD-NONFOOD-D53"];
   if (normalized === "md" || normalized === "md-ho") return categories.filter((value) => value.toLowerCase().startsWith("md"));
   if (normalized === "md-d53") return ["MD-D53"];
   if (normalized === "md-dgbg") return ["MD-DGBG"];
