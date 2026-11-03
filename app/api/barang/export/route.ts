@@ -7,8 +7,8 @@ import { db, type DBRow } from "@/lib/db";
 import { requireUser, isResponse, fail } from "@/lib/http";
 
 export const runtime = "nodejs";
-const allowedCategories = ["marketing", "md", "md-food", "md-nonfood", "marketing-d53", "md-d53", "marketing-dgbg", "md-dgbg"];
-const mdCategories = ["md", "md-food", "md-nonfood", "md-d53", "md-dgbg"];
+const allowedCategories = ["marketing", "md", "md-food", "md-food-d53", "md-nonfood", "md-nonfood-d53", "marketing-d53", "md-d53", "marketing-dgbg", "md-dgbg"];
+const mdCategories = ["md", "md-food", "md-food-d53", "md-nonfood", "md-nonfood-d53", "md-d53", "md-dgbg"];
 
 function parseExcelDate(value: unknown): Date | "" {
   if (!value) return "";
@@ -52,8 +52,8 @@ export async function GET(request: NextRequest) {
     const mdDivisionScopes: Record<string, string[]> = {
       md: mdCategories,
       "md-ho": mdCategories,
-      "md-food": ["md-food"],
-      "md-nonfood": ["md-nonfood"],
+      "md-food": ["md-food", "md-food-d53"],
+      "md-nonfood": ["md-nonfood", "md-nonfood-d53"],
       "md-d53": ["md-d53"],
       "md-dgbg": ["md-dgbg"],
     };
