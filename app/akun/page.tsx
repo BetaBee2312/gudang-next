@@ -9,13 +9,18 @@ type Account = { no_karyawan:string; nama:string; jabatan:string; division:strin
 type Presence = { no_karyawan:string; active_sessions:number };
 const divisions = [
   { value: "MKT", label: "Marketing" },
-  { value: "MD", label: "MD" },
+  { value: "MD-FOOD", label: "MD-Food" },
+  { value: "MD-NONFOOD", label: "MD-Nonfood" },
+  { value: "MD", label: "MD (gabungan, akun lama)" },
+  { value: "MD-D53", label: "MD-D53 (akun lama)" },
+  { value: "MD-DGBG", label: "MD-DGBG (akun lama)" },
 ];
 const blank = {no_karyawan:"",nama:"",jabatan:"",division:"MKT",kategori:"User",password:""};
 function normalizeDivision(value: string) {
   const key = String(value ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
   if (key === "marketing" || key === "mkt" || key.startsWith("marketing-") || key.startsWith("mkt-")) return "MKT";
-  if (key === "md" || key.startsWith("md-")) return "MD";
+  if (key === "md" || key === "md-ho") return "MD";
+  if (["md-food", "md-nonfood", "md-d53", "md-dgbg"].includes(key)) return key.toUpperCase();
   return String(value ?? "").trim();
 }
 export default function AkunPage(){
