@@ -182,6 +182,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
   }
 
   function openEdit(item: Product) {
+    if (!admin) return;
     setEditing(item);
     setForm({
       nama_barang: item.nama_barang,
@@ -197,6 +198,11 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (!admin) {
+      setModal(false);
+      await notify("Akses ditolak", "error", "Hanya kategori Admin atau Creator yang dapat mengubah barang.");
+      return;
+    }
     setSaving(true);
     setToast("");
     try {
@@ -267,6 +273,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
   }
 
   function openBulkEdit() {
+    if (!admin) return;
     const chosen = items.filter((item) => selected.includes(item.id_barang));
     setBulkRows(
       chosen.map((item) => ({
@@ -285,6 +292,11 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
 
   async function saveBulkEdit(e: React.FormEvent) {
     e.preventDefault();
+    if (!admin) {
+      setBulkModal(false);
+      await notify("Akses ditolak", "error", "Hanya kategori Admin atau Creator yang dapat mengubah barang.");
+      return;
+    }
     setBulkSaving(true);
     try {
       if (!bulkRows.length) { await notify("Belum ada barang yang dipilih", "warning", "Pilih setidaknya satu barang untuk diedit."); return; }
