@@ -7,7 +7,7 @@ import { db, type DBRow } from "@/lib/db";
 import { requireUser, isResponse, fail } from "@/lib/http";
 
 export const runtime = "nodejs";
-const allowedCategories = ["marketing", "md", "md-food", "md-food-d53", "md-nonfood", "md-nonfood-d53", "marketing-d53", "md-d53", "marketing-dgbg", "md-dgbg"];
+const allowedCategories = ["marketing", "md-food", "md-food-d53", "md-nonfood", "md-nonfood-d53", "marketing-d53", "marketing-dgbg", "md-dgbg"];
 const mdCategories = ["md", "md-food", "md-food-d53", "md-nonfood", "md-nonfood-d53", "md-d53", "md-dgbg"];
 
 function parseExcelDate(value: unknown): Date | "" {
@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
     const month = /^\d{1,2}$/.test(monthRaw ?? "") && Number(monthRaw) >= 1 && Number(monthRaw) <= 12 ? Number(monthRaw) : new Date().getMonth() + 1;
     const requestedFilter = (request.nextUrl.searchParams.get("filter") ?? "").toLowerCase();
     const requestedScope = (request.nextUrl.searchParams.get("scope") ?? "").toLowerCase();
+    const expiryFilter = request.nextUrl.searchParams.get("expired") === "1";
     const divisionKey = String(user.division ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
     const mdDivisionScopes: Record<string, string[]> = {
       md: mdCategories,
@@ -69,11 +70,11 @@ export async function GET(request: NextRequest) {
       return fail("Kategori barang tidak sesuai dengan divisi akun.", 403);
     }
     const activeMdCategories = hasMdDivisionScope ? scopedMdCategories : mdCategories;
-    const categoryWhere = categoryFilter
+    const categoryWhere = (categoryFilter
       ? " AND LOWER(b.kategori) = ?"
       : scopeMD
         ? ` AND LOWER(b.kategori) IN (${activeMdCategories.map(() => "?").join(",")})`
-        : "";
+        : "") + (expiryFilter ? " AND b.expired IS NOT NULL AND TRIM(CAST(b.expired AS CHAR)) <> '' AND CAST(b.expired AS CHAR) <> '0000-00-00'" : "");
     const categoryParams: string[] = categoryFilter ? [categoryFilter] : scopeMD ? [...activeMdCategories] : [];
 
     const [branchRows] = await db.execute<DBRow[]>(
@@ -91,6 +92,10 @@ export async function GET(request: NextRequest) {
     let itemWhere = ""; let itemParams: string[] = [];
     if (categoryFilter) { itemWhere = " WHERE LOWER(kategori) = ?"; itemParams = [categoryFilter]; }
     else if (scopeMD) { itemWhere = ` WHERE LOWER(kategori) IN (${activeMdCategories.map(() => "?").join(",")})`; itemParams = [...activeMdCategories]; }
+    if (expiryFilter) {
+      itemWhere += itemWhere ? " AND " : " WHERE ";
+      itemWhere += "expired IS NOT NULL AND TRIM(CAST(expired AS CHAR)) <> '' AND CAST(expired AS CHAR) <> '0000-00-00'";
+    }
     const [items] = await db.execute<DBRow[]>(`SELECT id_barang, nama_barang, kategori, expired, qty_awal, qty_terkini, gambar, plu FROM tb_barang_gc${itemWhere} ORDER BY nama_barang ASC`, itemParams);
 
     const wb = new ExcelJS.Workbook(); wb.creator = "Gudang Marketing"; wb.created = new Date();
