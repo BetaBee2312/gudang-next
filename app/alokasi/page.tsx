@@ -22,13 +22,89 @@ function SearchSelect<T extends string>({ value, onChange, options, placeholder,
   </div>;
 }
 
+function SearchMultiSelect({ values, onChange, options, placeholder }: {
+  values: string[];
+  onChange: (values: string[]) => void;
+  options: SearchOption<string>[];
+  placeholder: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const selectedOptions = values
+    .map((value) => options.find((option) => option.value === value))
+    .filter((option): option is SearchOption<string> => Boolean(option));
+  const filtered = options
+    .filter((option) => `${option.label} ${option.searchText ?? ""} ${option.hint ?? ""}`.toLowerCase().includes(query.trim().toLowerCase()))
+    .slice(0, 100);
+
+  function toggle(value: string) {
+    onChange(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
+    setQuery("");
+  }
+
+  return <div className="search-select">
+    <div className="multi-select-control">
+      {selectedOptions.map((option) => (
+        <button
+          type="button"
+          key={option.value}
+          className="multi-select-chip"
+          aria-label={`Hapus cabang ${option.label}`}
+          onClick={() => onChange(values.filter((value) => value !== option.value))}
+        >
+          <span>{option.label}</span><span aria-hidden="true">×</span>
+        </button>
+      ))}
+      <input
+        className="multi-select-input"
+        type="text"
+        role="combobox"
+        aria-expanded={open}
+        aria-autocomplete="list"
+        placeholder={values.length ? "Tambah cabang lainnya..." : placeholder}
+        value={query}
+        onFocus={() => setOpen(true)}
+        onChange={(event) => { setQuery(event.target.value); setOpen(true); }}
+        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") setOpen(false);
+          if (event.key === "Enter" && open && filtered[0]) {
+            event.preventDefault();
+            toggle(filtered[0].value);
+          }
+          if (event.key === "Backspace" && !query && values.length) {
+            onChange(values.slice(0, -1));
+          }
+        }}
+      />
+    </div>
+    {open && <div className="search-select-menu" role="listbox" aria-multiselectable="true">
+      {filtered.length ? filtered.map((option) => {
+        const selected = values.includes(option.value);
+        return <button
+          type="button"
+          role="option"
+          aria-selected={selected}
+          key={option.value}
+          className={`search-select-option ${selected ? "selected" : ""}`}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => toggle(option.value)}
+        >
+          <span>{selected ? "✓ " : ""}{option.label}</span>
+          {option.hint && <small>{option.hint}</small>}
+        </button>;
+      }) : <div className="search-select-empty">Tidak ada hasil yang cocok.</div>}
+    </div>}
+  </div>;
+}
+
 export default function AlokasiPage() {
   const [items, setItems] = useState<Allocation[]>([]); const [products, setProducts] = useState<Product[]>([]); const [branches, setBranches] = useState<Branch[]>([]); const [loading, setLoading] = useState(true); const [admin, setAdmin] = useState(false); const [userName, setUserName] = useState("");
   const [query, setQuery] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`; });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
-  const [status, setStatus] = useState(""); const [notice, setNotice] = useState(""); const [modal, setModal] = useState(false); const [branch, setBranch] = useState(""); const [pemohon, setPemohon] = useState(""); const [lines, setLines] = useState<ItemForm[]>([{ id_barang: "", qty: "1" }]); const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState(""); const [notice, setNotice] = useState(""); const [modal, setModal] = useState(false); const [branchCodes, setBranchCodes] = useState<string[]>([]); const [pemohon, setPemohon] = useState(""); const [lines, setLines] = useState<ItemForm[]>([{ id_barang: "", qty: "1" }]); const [saving, setSaving] = useState(false);
   async function load() { setLoading(true); try { const [a,p,b] = await Promise.all([requestJSON<{data: Allocation[]}>('/api/alokasi'), requestJSON<{data: Product[]}>('/api/barang'), requestJSON<{data: Branch[]}>('/api/cabang')]); setItems(a.data); setProducts(p.data); setBranches(b.data); } catch (e) { setNotice(e instanceof Error ? e.message : "Gagal memuat alokasi."); } finally { setLoading(false); } }
   useEffect(() => { load(); requestJSON<{user: {nama:string; kategori:string}}>("/api/auth/me").then(d => { setUserName(d.user.nama); setPemohon(d.user.nama); setAdmin(["admin", "creator"].includes(d.user.kategori.toLowerCase())); }).catch(() => {}); }, []);
   const monthOptions = useMemo(() => {
@@ -64,11 +140,11 @@ export default function AlokasiPage() {
   useEffect(() => { setCurrentPage((page) => Math.min(page, totalPages)); }, [totalPages]);
   const pending = items.filter(i => i.status.toLowerCase() === "pending").length;
   function addLine() { setLines(prev => [...prev, { id_barang: "", qty: "1" }]); }
-  async function save(e: React.FormEvent) { e.preventDefault(); if (!branch) { setNotice("Pilih cabang tujuan alokasi."); return; } setSaving(true); try { const result = await requestJSON<{message:string}>('/api/alokasi', { method: 'POST', body: JSON.stringify({ nama_pemohon: pemohon || userName, kode_cabang: branch, items: lines.map(l => ({ id_barang:l.id_barang, qty:Number(l.qty) })) }) }); setNotice(""); await notify("Alokasi berhasil dibuat", "success", result.message); setModal(false); setLines([{ id_barang: "", qty: "1" }]); await load(); } catch (e) { setNotice(""); await notify("Gagal membuat alokasi", "error", e instanceof Error ? e.message : "Terjadi kesalahan."); } finally { setSaving(false); } }
+  async function save(e: React.FormEvent) { e.preventDefault(); if (!branchCodes.length) { setNotice("Pilih minimal satu cabang tujuan alokasi."); return; } setSaving(true); try { const result = await requestJSON<{message:string}>('/api/alokasi', { method: 'POST', body: JSON.stringify({ nama_pemohon: pemohon || userName, kode_cabang: branchCodes, items: lines.map(l => ({ id_barang:l.id_barang, qty:Number(l.qty) })) }) }); setNotice(""); await notify("Alokasi berhasil dibuat", "success", result.message); setModal(false); setBranchCodes([]); setLines([{ id_barang: "", qty: "1" }]); await load(); } catch (e) { setNotice(""); await notify("Gagal membuat alokasi", "error", e instanceof Error ? e.message : "Terjadi kesalahan."); } finally { setSaving(false); } }
   async function action(id: string, actionName: "approve" | "reject") { if (!(await confirmAction(actionName === "approve" ? "Konfirmasi alokasi ini?" : "Tolak alokasi?", actionName === "approve" ? "Status alokasi akan diubah menjadi disetujui." : "Stok pending akan dikembalikan."))) return; try { const d = await requestJSON<{message:string}>('/api/alokasi', { method: 'PATCH', body: JSON.stringify({ id_alokasi:id, action:actionName }) }); setNotice(""); await notify(actionName === "approve" ? "Alokasi disetujui" : "Alokasi ditolak", "success", d.message); await load(); } catch (e) { setNotice(""); await notify("Aksi alokasi gagal", "error", e instanceof Error ? e.message : "Terjadi kesalahan."); } }
   async function remove(i: Allocation) { if (!(await confirmAction("Hapus alokasi ini?", "Tindakan ini tidak bisa dibatalkan.", { confirmButtonColor: "#dc2626", confirmButtonText: "Ya, hapus" }))) return; try { await requestJSON('/api/alokasi', { method:'DELETE', body:JSON.stringify({id_alokasi:i.id_alokasi}) }); setNotice(""); await notify("Alokasi dihapus", "success"); await load(); } catch (e) { setNotice(""); await notify("Gagal menghapus alokasi", "error", e instanceof Error ? e.message : "Terjadi kesalahan."); } }
   function badge(statusText: string) { const s = statusText.toLowerCase(); const c = s === "pending" ? "badge-yellow" : s.startsWith("approved") ? "badge-green" : s.startsWith("rejected") ? "badge-red" : "badge"; return <span className={`badge ${c}`}>{statusText}</span>; }
-  return <DashboardShell><div className="page-heading"><div><h1>Alokasi Barang</h1></div><button className="btn btn-primary" onClick={() => { setBranch(""); setPemohon(userName); setLines([{id_barang:"", qty:"1"}]); setModal(true); }}><Plus/> Buat Alokasi</button></div>{notice && <div className="toast">{notice}<button className="float-right" onClick={() => setNotice("")}><X size={13}/></button></div>}<section className="panel"><div className="panel-header"><div><div className="panel-title">Riwayat alokasi</div><div className="panel-subtitle">Stok langsung berkurang saat alokasi dibuat.</div></div></div><div className="panel-body"><div className="toolbar"><label className="search-wrap"><Search/><input placeholder="Cari barang, cabang, pemohon…" value={query} onChange={e => { setQuery(e.target.value); setCurrentPage(1); }}/></label><select className="select-field" style={{width:"auto",minWidth:160}} value={selectedMonth} onChange={e => { setSelectedMonth(e.target.value); setCurrentPage(1); }}><option value="all">Semua bulan</option>{monthOptions.map(month => <option key={month.value} value={month.value}>{month.label}</option>)}</select><select className="select-field" style={{width:"auto",minWidth:160}} value={status} onChange={e => { setStatus(e.target.value); setCurrentPage(1); }}><option value="">Semua status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div></div><div className="allocation-date-groups">
+  return <DashboardShell><div className="page-heading"><div><h1>Alokasi Barang</h1></div><button className="btn btn-primary" onClick={() => { setBranchCodes([]); setPemohon(userName); setLines([{id_barang:"", qty:"1"}]); setModal(true); }}><Plus/> Buat Alokasi</button></div>{notice && <div className="toast">{notice}<button className="float-right" onClick={() => setNotice("")}><X size={13}/></button></div>}<section className="panel"><div className="panel-header"><div><div className="panel-title">Riwayat alokasi</div><div className="panel-subtitle">Stok langsung berkurang saat alokasi dibuat.</div></div></div><div className="panel-body"><div className="toolbar"><label className="search-wrap"><Search/><input placeholder="Cari barang, cabang, pemohon…" value={query} onChange={e => { setQuery(e.target.value); setCurrentPage(1); }}/></label><select className="select-field" style={{width:"auto",minWidth:160}} value={selectedMonth} onChange={e => { setSelectedMonth(e.target.value); setCurrentPage(1); }}><option value="all">Semua bulan</option>{monthOptions.map(month => <option key={month.value} value={month.value}>{month.label}</option>)}</select><select className="select-field" style={{width:"auto",minWidth:160}} value={status} onChange={e => { setStatus(e.target.value); setCurrentPage(1); }}><option value="">Semua status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div></div><div className="allocation-date-groups">
           {loading ? <div className="skeleton-list" aria-label="Memuat alokasi">{Array.from({ length: 5 }, (_, i) => <div className="skeleton-row" key={i}><span className="skeleton skeleton-line skeleton-w-25"/><span className="skeleton skeleton-line skeleton-w-60"/><span className="skeleton skeleton-line skeleton-w-15"/></div>)}</div> : allocationGroups.length === 0 ? <div className="empty-state">Tidak ada riwayat alokasi pada bulan/filter ini.</div> : pageGroups.map(group => (
             <section className="allocation-date-group" key={group.date}>
               <div className="allocation-date-heading">{group.date === "Tanggal tidak diketahui" ? group.date : shortDate(group.date)} <span>{group.rows.length} alokasi</span></div>
@@ -106,6 +182,6 @@ export default function AlokasiPage() {
           ))}
           {!loading && allocationGroups.length > 0 && <div className="handover-pagination"><span className="text-xs text-slate-500">Menampilkan grup tanggal {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, allocationGroups.length)} dari {allocationGroups.length}</span><div className="flex items-center gap-2"><button type="button" className="btn btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage(page => Math.max(1,page-1))}>Sebelumnya</button><span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Halaman {currentPage} / {totalPages}</span><button type="button" className="btn btn-sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(page => Math.min(totalPages,page+1))}>Berikutnya</button></div></div>}
         </div></section>
-    {modal && <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}><form className="modal" onSubmit={save}><div className="modal-head"><h3>Buat Alokasi Barang</h3><button className="btn btn-sm" type="button" onClick={()=>setModal(false)}><X/></button></div><div className="modal-body"><div className="form-grid"><div className="form-group"><label className="form-label">Nama pemohon</label><input className="field" value={pemohon} onChange={e=>setPemohon(e.target.value)} required/></div><div className="form-group"><label className="form-label">Cabang tujuan</label><SearchSelect value={branch} onChange={setBranch} placeholder="Cari nama atau kode cabang…" required options={branches.map(b=>({value:b.kode_cabang,label:b.nama_cabang,searchText:b.kode_cabang,hint:b.singkatan ? `Preview: ${b.singkatan} · ${b.kode_cabang}` : b.kode_cabang}))} /></div></div><div className="flex items-center justify-between mb-3 mt-2"><div className="panel-title">Barang yang dialokasikan</div><button type="button" className="btn btn-sm" onClick={addLine}><Plus size={13}/> Tambah baris</button></div>{lines.map((line, idx)=><div className="grid grid-cols-[minmax(0,1fr)_90px_34px] gap-2 mb-2" key={idx}><SearchSelect value={line.id_barang} onChange={value=>setLines(old=>old.map((l,j)=>j===idx?{...l,id_barang:value}:l))} placeholder="Cari nama / ID barang…" required options={products.map(p=>({value:p.id_barang,label:p.nama_barang,searchText:p.id_barang,hint:`${p.id_barang} · stok ${p.qty_terkini}`}))} /><input aria-label="Jumlah" type="number" min="1" className="field" value={line.qty} onChange={e=>setLines(old=>old.map((l,j)=>j===idx?{...l,qty:e.target.value}:l))} required/><button type="button" className="btn btn-sm btn-danger" onClick={()=>setLines(old=>old.filter((_,j)=>j!==idx))} disabled={lines.length===1}><X size={13}/></button></div>)}<p className="table-muted mt-3">Stok diperiksa dan dikurangi saat permintaan dibuat. Jika ditolak saat masih pending, stok dikembalikan otomatis.</p></div><div className="modal-foot"><button type="button" className="btn" onClick={()=>setModal(false)}>Batal</button><button className="btn btn-primary" disabled={saving}>{saving?"Menyimpan…":"Ajukan Alokasi"}</button></div></form></div>}
+    {modal && <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(false)}}><form className="modal" onSubmit={save}><div className="modal-head"><h3>Buat Alokasi Barang</h3><button className="btn btn-sm" type="button" onClick={()=>setModal(false)}><X/></button></div><div className="modal-body"><div className="form-grid"><div className="form-group"><label className="form-label">Nama pemohon</label><input className="field" value={pemohon} onChange={e=>setPemohon(e.target.value)} required/></div><div className="form-group"><label className="form-label">Cabang tujuan</label><SearchMultiSelect values={branchCodes} onChange={setBranchCodes} placeholder="Cari dan pilih cabang..." options={branches.map(b=>({value:b.kode_cabang,label:b.nama_cabang,searchText:b.kode_cabang,hint:b.singkatan ? `Preview: ${b.singkatan} · ${b.kode_cabang}` : b.kode_cabang}))} />{branchCodes.length > 0 && <p className="table-muted mt-2">{branchCodes.length} cabang dipilih. Jumlah barang berlaku untuk setiap cabang.</p>}</div></div><div className="flex items-center justify-between mb-3 mt-2"><div className="panel-title">Barang yang dialokasikan</div><button type="button" className="btn btn-sm" onClick={addLine}><Plus size={13}/> Tambah baris</button></div>{lines.map((line, idx)=><div className="grid grid-cols-[minmax(0,1fr)_90px_34px] gap-2 mb-2" key={idx}><SearchSelect value={line.id_barang} onChange={value=>setLines(old=>old.map((l,j)=>j===idx?{...l,id_barang:value}:l))} placeholder="Cari nama / ID barang…" required options={products.map(p=>({value:p.id_barang,label:p.nama_barang,searchText:p.id_barang,hint:`${p.id_barang} · stok ${p.qty_terkini}`}))} /><input aria-label="Jumlah" type="number" min="1" className="field" value={line.qty} onChange={e=>setLines(old=>old.map((l,j)=>j===idx?{...l,qty:e.target.value}:l))} required/><button type="button" className="btn btn-sm btn-danger" onClick={()=>setLines(old=>old.filter((_,j)=>j!==idx))} disabled={lines.length===1}><X size={13}/></button></div>)}<p className="table-muted mt-3">Stok diperiksa dan dikurangi saat permintaan dibuat. Jika ditolak saat masih pending, stok dikembalikan otomatis.</p></div><div className="modal-foot"><button type="button" className="btn" onClick={()=>setModal(false)}>Batal</button><button className="btn btn-primary" disabled={saving}>{saving?"Menyimpan…":"Ajukan Alokasi"}</button></div></form></div>}
   </DashboardShell>;
 }
