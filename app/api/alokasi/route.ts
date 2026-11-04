@@ -28,11 +28,19 @@ export async function POST(request: NextRequest) {
   if (isResponse(user)) return user;
   if (isMDDivision(user.division)) return fail("Divisi MD tidak memiliki akses ke modul alokasi.", 403);
   try {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     const pemohon = String(body.nama_pemohon ?? user.nama ?? "").trim();
-    const rawBranches = Array.isArray(body.kode_cabang) ? body.kode_cabang : [body.kode_cabang];
-    const branchCodes = [...new Set(rawBranches.map((value: unknown) => String(value ?? "").trim()).filter(Boolean))];
-    const items = Array.isArray(body.items) ? body.items : [{ id_barang: body.id_barang, qty: body.qty }];
+    const rawBranches: unknown[] = Array.isArray(body.kode_cabang) ? body.kode_cabang : [body.kode_cabang];
+    const branchCodes: string[] = Array.from(new Set(
+      rawBranches
+        .map((value: unknown): string => String(value ?? "").trim())
+        .filter((value: string) => value.length > 0),
+    ));
+    type AllocationItemInput = { id_barang?: unknown; qty?: unknown; qty_teralokasi?: unknown };
+    const rawItems: unknown[] = Array.isArray(body.items)
+      ? body.items
+      : [{ id_barang: body.id_barang, qty: body.qty }];
+    const items = rawItems as AllocationItemInput[];
     if (!pemohon || !branchCodes.length || !items.length) return fail("Pemohon, minimal satu cabang, dan minimal satu barang wajib dipilih.");
     let conn;
     try {
