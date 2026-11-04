@@ -441,7 +441,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         {!habis && (
           <div className="flex gap-2 w-full md:w-auto">
             <input type="month" className="field flex-1 md:flex-none" style={{ width: 150 }} value={month} onChange={(e) => setMonth(e.target.value)} />
-            <a className="btn justify-center" href={`/api/barang/export?bulan=${encodeURIComponent(month)}${category ? `&filter=${encodeURIComponent(category.toLowerCase())}` : ""}`}><Download size={16} /> Export</a>
+            <a className="btn justify-center" href={`/api/barang/export?bulan=${encodeURIComponent(month)}${category && !category.startsWith("__") ? `&filter=${encodeURIComponent(category.toLowerCase())}` : ""}${category === "__has_expiry__" ? "&expired=1" : ""}`}><Download size={16} /> Export</a>
           </div>
         )}
       </div>
