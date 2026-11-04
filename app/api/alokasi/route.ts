@@ -30,12 +30,21 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const pemohon = String(body.nama_pemohon ?? user.nama ?? "").trim();
-    const kodeCabang = String(body.kode_cabang ?? "").trim();
+    const rawBranches = Array.isArray(body.kode_cabang) ? body.kode_cabang : [body.kode_cabang];
+    const branchCodes = [...new Set(rawBranches.map((value: unknown) => String(value ?? "").trim()).filter(Boolean))];
     const items = Array.isArray(body.items) ? body.items : [{ id_barang: body.id_barang, qty: body.qty }];
-    if (!pemohon || !kodeCabang || !items.length) return fail("Pemohon, cabang, dan minimal satu barang wajib dipilih.");
+    if (!pemohon || !branchCodes.length || !items.length) return fail("Pemohon, minimal satu cabang, dan minimal satu barang wajib dipilih.");
     let conn;
     try {
       conn = await db.getConnection(); await conn.beginTransaction();
+      const [validBranches] = await conn.execute<DBRow[]>(
+        `SELECT kode_cabang FROM tb_cabang WHERE kode_cabang IN (${branchCodes.map(() => "?").join(",")})`,
+        branchCodes,
+      );
+      const validBranchCodes = new Set(validBranches.map((row) => String(row.kode_cabang)));
+      const invalidBranches = branchCodes.filter((code) => !validBranchCodes.has(code));
+      if (invalidBranches.length) throw new Error(`Cabang tidak ditemukan: ${invalidBranches.join(", ")}.`);
+
       const now = new Date();
       const jakarta = new Date(now.getTime() + (7 * 60 - now.getTimezoneOffset()) * 60000);
       const datePrefix = `${jakarta.getUTCFullYear()}${String(jakarta.getUTCMonth() + 1).padStart(2, "0")}${String(jakarta.getUTCDate()).padStart(2, "0")}`;
@@ -43,21 +52,25 @@ export async function POST(request: NextRequest) {
       let sequence = Number(String(lastRows[0]?.id_alokasi ?? "").slice(8, 11)) + 1;
       if (!Number.isFinite(sequence) || sequence < 1) sequence = 1;
       const ids: string[] = [];
-      for (const raw of items) {
-        const idBarang = String(raw.id_barang ?? "").trim(); const qty = Number(raw.qty ?? raw.qty_teralokasi ?? 0);
-        if (!idBarang || !Number.isInteger(qty) || qty <= 0) throw new Error("Barang atau jumlah alokasi tidak valid.");
-        const [productRows] = await conn.execute<DBRow[]>("SELECT nama_barang, qty_terkini FROM tb_barang_gc WHERE id_barang = ? FOR UPDATE", [idBarang]);
-        const product = productRows[0];
-        if (!product) throw new Error(`Barang ${idBarang} tidak ditemukan.`);
-        const available = Number(product.qty_terkini ?? 0);
-        if (available < qty) throw new Error(`Stok ${String(product.nama_barang)} tidak cukup. Tersedia ${available}, diminta ${qty}.`);
-        const id = `${datePrefix}${String(sequence++).padStart(3, "0")}${String(Date.now()).slice(-3)}${randomInt(0, 10)}`;
-        await conn.execute("INSERT INTO tb_list_alokasi (id_alokasi, id_barang, qty_teralokasi, nama_pemohon, status, tanggal, kode_cabang) VALUES (?, ?, ?, ?, 'pending', NOW(), ?)", [id, idBarang, qty, pemohon, kodeCabang]);
-        await conn.execute("UPDATE tb_barang_gc SET qty_terkini = qty_terkini - ?, teralokasi = teralokasi + ? WHERE id_barang = ?", [qty, qty, idBarang]);
-        ids.push(id);
+
+      // Quantity is applied per branch: each selected branch receives the requested quantity for every item.
+      for (const kodeCabang of branchCodes) {
+        for (const raw of items) {
+          const idBarang = String(raw.id_barang ?? "").trim(); const qty = Number(raw.qty ?? raw.qty_teralokasi ?? 0);
+          if (!idBarang || !Number.isInteger(qty) || qty <= 0) throw new Error("Barang atau jumlah alokasi tidak valid.");
+          const [productRows] = await conn.execute<DBRow[]>("SELECT nama_barang, qty_terkini FROM tb_barang_gc WHERE id_barang = ? FOR UPDATE", [idBarang]);
+          const product = productRows[0];
+          if (!product) throw new Error(`Barang ${idBarang} tidak ditemukan.`);
+          const available = Number(product.qty_terkini ?? 0);
+          if (available < qty) throw new Error(`Stok ${String(product.nama_barang)} tidak cukup untuk cabang ${kodeCabang}. Tersedia ${available}, diminta ${qty}.`);
+          const id = `${datePrefix}${String(sequence++).padStart(3, "0")}${String(Date.now()).slice(-3)}${randomInt(0, 10)}`;
+          await conn.execute("INSERT INTO tb_list_alokasi (id_alokasi, id_barang, qty_teralokasi, nama_pemohon, status, tanggal, kode_cabang) VALUES (?, ?, ?, ?, 'pending', NOW(), ?)", [id, idBarang, qty, pemohon, kodeCabang]);
+          await conn.execute("UPDATE tb_barang_gc SET qty_terkini = qty_terkini - ?, teralokasi = teralokasi + ? WHERE id_barang = ?", [qty, qty, idBarang]);
+          ids.push(id);
+        }
       }
       await conn.commit();
-      return NextResponse.json({ success: true, message: `${ids.length} item dialokasikan dengan status pending.`, ids }, { status: 201 });
+      return NextResponse.json({ success: true, message: `${items.length} barang dialokasikan ke ${branchCodes.length} cabang (${ids.length} baris), semuanya berstatus pending.`, ids }, { status: 201 });
     } catch (error) { if (conn) await conn.rollback(); throw error; }
     finally { conn?.release(); }
   } catch (error) { return fail(databaseErrorMessage(error), 400); }
