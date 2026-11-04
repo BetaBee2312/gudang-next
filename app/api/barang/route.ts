@@ -73,11 +73,13 @@ export async function GET(request: NextRequest) {
   try {
     const search = request.nextUrl.searchParams.get("q")?.trim() ?? "";
     const category = request.nextUrl.searchParams.get("kategori") ?? "";
+    const expiryFilter = request.nextUrl.searchParams.get("expired") === "1";
     const habis = request.nextUrl.searchParams.get("habis") === "1";
     const where: string[] = [];
     const params: any[] = [];
     if (search) { where.push("(nama_barang LIKE ? OR id_barang LIKE ? OR plu LIKE ?)"); params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
     if (category) { where.push("kategori = ?"); params.push(category); }
+    if (expiryFilter) where.push("expired IS NOT NULL AND TRIM(CAST(expired AS CHAR)) <> '' AND CAST(expired AS CHAR) <> '0000-00-00'");
     if (habis) where.push("qty_terkini <= 0"); else where.push("qty_terkini > 0");
     const division = String(user.division ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
     const mdCategoryScopes: Record<string, string[]> = {
