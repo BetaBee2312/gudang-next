@@ -46,7 +46,7 @@ type BulkRow = {
   newImage?: File | null; 
 };
 
-const categories = ["Marketing", "MD-FOOD", "MD-FOOD-D53", "MD-NONFOOD", "MD-NONFOOD-D53", "Marketing-D53", "Marketing-DGBG", "MD-DGBG"];
+const categories = ["Marketing", "Marketing-D53", "Marketing-DGBG", "MD-DGBG", "MD-FOOD", "MD-FOOD-D53", "MD-NONFOOD", "MD-NONFOOD-D53"];
 const emptyForm = { nama_barang: "", kategori: "Marketing", expired: "", qty_awal: "0", qty_terkini: "0", plu: "" };
 
 function getVisibleCategories(division: string): string[] {
