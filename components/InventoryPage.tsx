@@ -46,7 +46,7 @@ type BulkRow = {
   newImage?: File | null; 
 };
 
-const categories = ["Marketing", "MD", "MD-FOOD", "MD-FOOD-D53", "MD-NONFOOD", "MD-NONFOOD-D53", "Marketing-D53", "MD-D53", "Marketing-DGBG", "MD-DGBG"];
+const categories = ["Marketing", "MD-FOOD", "MD-FOOD-D53", "MD-NONFOOD", "MD-NONFOOD-D53", "Marketing-D53", "Marketing-DGBG", "MD-DGBG"];
 const emptyForm = { nama_barang: "", kategori: "Marketing", expired: "", qty_awal: "0", qty_terkini: "0", plu: "" };
 
 function getVisibleCategories(division: string): string[] {
@@ -54,7 +54,6 @@ function getVisibleCategories(division: string): string[] {
   if (normalized === "md-food") return ["MD-FOOD", "MD-FOOD-D53"];
   if (normalized === "md-nonfood") return ["MD-NONFOOD", "MD-NONFOOD-D53"];
   if (normalized === "md" || normalized === "md-ho") return categories.filter((value) => value.toLowerCase().startsWith("md"));
-  if (normalized === "md-d53") return ["MD-D53"];
   if (normalized === "md-dgbg") return ["MD-DGBG"];
   return categories;
 }
@@ -152,9 +151,11 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
   const filtered = useMemo(
     () =>
       items.filter((item) => {
-        const matchesExpiry = category === "__expiring_90_days__"
-          ? expiryStatus(item.expired) === "soon" && Number(item.qty_terkini) > 0
-          : !category || item.kategori === category;
+        const matchesExpiry = category === "__has_expiry__"
+          ? Boolean(item.expired && String(item.expired).trim() && String(item.expired).slice(0, 10) !== "0000-00-00")
+          : category === "__expiring_90_days__"
+            ? expiryStatus(item.expired) === "soon" && Number(item.qty_terkini) > 0
+            : !category || item.kategori === category;
         return matchesExpiry &&
           `${item.nama_barang} ${item.id_barang} ${item.plu ?? ""}`.toLowerCase().includes(query.toLowerCase());
       }),
@@ -421,6 +422,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
         </label>
         <select className="select-field" style={{ width: "auto", minWidth: 170 }} value={category} onChange={(e) => { setCategory(e.target.value); setCurrentPage(1); }}>
           <option value="">Semua kategori</option>
+          <option value="__has_expiry__">Ada Tanggal Expired</option>
           <option value="__expiring_90_days__">Akan Expired (3 bulan)</option>
           {visibleCategories.map((c) => <option key={c}>{c}</option>)}
         </select>
