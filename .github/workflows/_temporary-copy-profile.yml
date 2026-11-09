@@ -1,0 +1,53 @@
+name: Temporary profile photo copy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/_temporary-copy-profile.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  copy-profile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out gudang-next
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Copy profile images from gudang-php
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/profile
+          files=(
+            "05040191.jpeg"
+            "15117478.jpg"
+            "25075533.jpg"
+            "25075533.webp"
+            "26047578.png"
+            "robot.jpg"
+          )
+          for file in "${files[@]}"; do
+            curl --fail --silent --show-error --location \
+              "https://raw.githubusercontent.com/BetaBee2312/gudang-php/main/website/fotoprofil/${file}" \
+              --output "public/profile/${file}"
+            test -s "public/profile/${file}"
+          done
+          rm -f public/profile/Thumbs.db
+
+      - name: Commit copied images and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/profile
+          git rm .github/workflows/_temporary-copy-profile.yml
+          git commit -m "Copy profile photos from gudang-php"
+          git push origin HEAD:main
