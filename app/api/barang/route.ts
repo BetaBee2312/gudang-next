@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import sharp from "sharp";
+import { compressSquareJpeg } from "@/lib/image-processing";
 import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { requireUser, isResponse, fail } from "@/lib/http";
@@ -11,39 +11,16 @@ export const runtime = "nodejs";
 const PREFIX: Record<string, string> = { Marketing: "MKT", MD: "MD", "MD-FOOD": "MD-FOOD", "MD-FOOD-D53": "MD-FOOD-D53", "MD-NONFOOD": "MD-NONFOOD", "MD-NONFOOD-D53": "MD-NONFOOD-D53", "Marketing-D53": "MKT-D53", "MD-D53": "MD-D53", "Marketing-DGBG": "MKT-GBG", "MD-DGBG": "MD-GBG" };
 const uploadDir = () => path.join(process.cwd(), "public", "image");
 const MAX_UPLOAD = 20 * 1024 * 1024;
-const TARGET_IMAGE = 900 * 1024;
 
 async function saveImage(value: FormDataEntryValue | null): Promise<string | null> {
   if (!(value instanceof File) || value.size === 0) return null;
   if (value.size > MAX_UPLOAD) throw new Error("Ukuran gambar maksimal 20 MB sebelum kompresi.");
   const ext = path.extname(value.name).toLowerCase();
   if (![".jpg", ".jpeg", ".png", ".webp"].includes(ext)) throw new Error("Format gambar harus JPG, PNG, atau WebP.");
-  let input = Buffer.from(await value.arrayBuffer());
-  let output = input;
-  let finalExt = ext;
-  if (input.length > 2 * 1024 * 1024) {
-    let quality = 82;
-    for (let attempt = 0; attempt < 8; attempt++) {
-      output = await sharp(input, { limitInputPixels: 40_000_000 })
-        .rotate()
-        .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
-        .jpeg({ quality, mozjpeg: true, chromaSubsampling: "4:2:0" })
-        .toBuffer();
-      finalExt = ".jpg";
-      if (output.length < TARGET_IMAGE) break;
-      quality = Math.max(25, quality - 8);
-    }
-    if (output.length >= TARGET_IMAGE) {
-      output = await sharp(input, { limitInputPixels: 40_000_000 })
-        .rotate()
-        .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
-        .jpeg({ quality: 25, mozjpeg: true, chromaSubsampling: "4:2:0" })
-        .toBuffer();
-      finalExt = ".jpg";
-    }
-    if (output.length >= 1024 * 1024) throw new Error("Gambar gagal dikompres menjadi di bawah 1 MB. Pilih gambar lain.");
-  }
-  const filename = `${randomUUID()}${finalExt}`;
+
+  const input = Buffer.from(await value.arrayBuffer());
+  const output = await compressSquareJpeg(input);
+  const filename = `${randomUUID()}.jpg`;
   await mkdir(uploadDir(), { recursive: true });
   await writeFile(path.join(uploadDir(), filename), output, { flag: "wx" });
   return filename;
