@@ -96,10 +96,10 @@ export default function ProfilPage() {
         </div>
         <div className="text-lg font-extrabold display-font mt-3">{nama || user.nama}</div><div className="text-xs text-slate-500 mt-1">{user.jabatan || "Tanpa jabatan"}</div>
         <div className="mt-4 flex gap-2 flex-wrap"><span className="badge">{user.division}</span><span className="badge badge-green">{user.kategori}</span></div>
-        <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={e => setPhoto(e.target.files?.[0] ?? null)}/>
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={e => setPhoto(e.target.files?.[0] ?? null)}/>
         <button type="button" className="btn mt-4 w-full" onClick={() => fileRef.current?.click()}><Upload size={14}/> Pilih Foto Profil</button>
         {photo && <div className="text-xs text-slate-500 mt-2 break-all">{photo.name}<button type="button" className="ml-2 underline" onClick={() => { setPhoto(null); if (fileRef.current) fileRef.current.value = ""; }}>Batalkan</button></div>}
-        <div className="border-t border-slate-100 mt-5 pt-4 text-xs leading-6 text-slate-500 flex gap-3"><LockKeyhole size={16} className="shrink-0 mt-1"/><span>Password disimpan sebagai hash. Foto di atas 2 MB dikompres otomatis hingga di bawah 1 MB.</span></div>
+        <div className="border-t border-slate-100 mt-5 pt-4 text-xs leading-6 text-slate-500 flex gap-3"><LockKeyhole size={16} className="shrink-0 mt-1"/><span>Password disimpan sebagai hash. Foto otomatis dipotong 1:1 dan disimpan sebagai JPG di bawah 1 MB. Ukuran file awal maksimal 20 MB.</span></div>
       </div></aside>
     </div>}
   </DashboardShell>;
