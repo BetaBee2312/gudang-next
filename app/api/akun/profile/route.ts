@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
-import sharp from "sharp";
+import { compressSquareJpeg } from "@/lib/image-processing";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
@@ -11,7 +11,6 @@ export const runtime = "nodejs";
 
 const profileDir = () => path.join(process.cwd(), "public", "profile");
 const MAX_UPLOAD = 20 * 1024 * 1024;
-const TARGET_IMAGE = 900 * 1024;
 
 async function removeProfileIfUnused(filename: unknown, currentNik: string) {
   if (!filename) return;
@@ -48,35 +47,11 @@ export async function PATCH(request: NextRequest) {
 
     let photoName: string | null = null;
     if (photo instanceof File && photo.size > 0) {
-      const extensions: Record<string, string> = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif" };
-      const extension = extensions[photo.type];
-      if (!extension) return fail("Format foto didukung: JPG, PNG, WebP, atau GIF.");
+      const supportedTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+      if (!supportedTypes.has(photo.type)) return fail("Format foto didukung: JPG, PNG, WebP, atau GIF.");
       const input = Buffer.from(await photo.arrayBuffer());
-      let output = input;
-      let finalExtension = extension;
-      if (input.length > 2 * 1024 * 1024) {
-        let quality = 82;
-        for (let attempt = 0; attempt < 8; attempt++) {
-          output = await sharp(input, { limitInputPixels: 40_000_000 })
-            .rotate()
-            .resize({ width: 1800, height: 1800, fit: "inside", withoutEnlargement: true })
-            .jpeg({ quality, mozjpeg: true, chromaSubsampling: "4:2:0" })
-            .toBuffer();
-          finalExtension = ".jpg";
-          if (output.length < TARGET_IMAGE) break;
-          quality = Math.max(25, quality - 8);
-        }
-        if (output.length >= TARGET_IMAGE) {
-          output = await sharp(input, { limitInputPixels: 40_000_000 })
-            .rotate()
-            .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
-            .jpeg({ quality: 25, mozjpeg: true, chromaSubsampling: "4:2:0" })
-            .toBuffer();
-          finalExtension = ".jpg";
-        }
-        if (output.length >= 1024 * 1024) return fail("Foto gagal dikompres menjadi di bawah 1 MB. Pilih foto lain.");
-      }
-      photoName = `${randomBytes(12).toString("hex")}${finalExtension}`;
+      const output = await compressSquareJpeg(input);
+      photoName = `${randomBytes(12).toString("hex")}.jpg`;
       await mkdir(profileDir(), { recursive: true });
       savedPath = path.join(profileDir(), photoName);
       await writeFile(savedPath, output, { flag: "wx" });
