@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import sharp from "sharp";
+import { compressSquareJpeg } from "@/lib/image-processing";
 import { db, databaseErrorMessage, type DBRow } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { requireUser, isResponse, fail } from "@/lib/http";
@@ -11,7 +11,6 @@ export const runtime = "nodejs";
 
 const uploadDir = () => path.join(process.cwd(), "public", "image");
 const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
-const TARGET_IMAGE_SIZE = 900 * 1024;
 const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 type BulkItem = {
@@ -41,32 +40,8 @@ async function saveImage(value: FormDataEntryValue | null): Promise<string | nul
   if (!ALLOWED_EXTENSIONS.has(ext)) throw new Error(`Foto ${value.name}: format harus JPG, PNG, atau WebP.`);
 
   const input = Buffer.from(await value.arrayBuffer());
-  let output = input;
-  let finalExt = ext;
-  if (input.length > 2 * 1024 * 1024) {
-    let quality = 82;
-    for (let attempt = 0; attempt < 8; attempt++) {
-      output = await sharp(input, { limitInputPixels: 40_000_000 })
-        .rotate()
-        .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
-        .jpeg({ quality, mozjpeg: true, chromaSubsampling: "4:2:0" })
-        .toBuffer();
-      finalExt = ".jpg";
-      if (output.length < TARGET_IMAGE_SIZE) break;
-      quality = Math.max(25, quality - 8);
-    }
-    if (output.length >= TARGET_IMAGE_SIZE) {
-      output = await sharp(input, { limitInputPixels: 40_000_000 })
-        .rotate()
-        .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
-        .jpeg({ quality: 25, mozjpeg: true, chromaSubsampling: "4:2:0" })
-        .toBuffer();
-      finalExt = ".jpg";
-    }
-    if (output.length >= 1024 * 1024) throw new Error(`Foto ${value.name}: kompresi tidak mencapai di bawah 1 MB. Pilih foto lain.`);
-  }
-
-  const filename = `${randomUUID()}${finalExt}`;
+  const output = await compressSquareJpeg(input);
+  const filename = `${randomUUID()}.jpg`;
   await mkdir(uploadDir(), { recursive: true });
   await writeFile(path.join(uploadDir(), filename), output, { flag: "wx" });
   return filename;
