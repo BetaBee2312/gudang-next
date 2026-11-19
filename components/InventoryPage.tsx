@@ -304,7 +304,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
     try {
       if (!bulkRows.length) { await notify("Belum ada barang yang dipilih", "warning", "Pilih setidaknya satu barang untuk diedit."); return; }
       if (bulkRows.some((row) => !row.nama_barang.trim() || !Number.isInteger(Number(row.qty_awal)) || Number(row.qty_awal) < 0 || !Number.isInteger(Number(row.qty_terkini)) || Number(row.qty_terkini) < 0)) { await notify("Data stok tidak valid", "error", "Nama wajib diisi dan jumlah stok harus bilangan bulat nol atau lebih."); return; }
-      if (bulkRows.some((row) => row.newImage && (row.newImage.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(row.newImage.type)))) { await notify("Foto tidak valid", "error", "Foto harus JPG, PNG, atau WebP dengan ukuran maksimal 5 MB."); return; }
+      if (bulkRows.some((row) => row.newImage && (row.newImage.size > 20 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(row.newImage.type)))) { await notify("Foto tidak valid", "error", "Foto harus JPG, PNG, atau WebP dengan ukuran maksimal 20 MB sebelum kompresi."); return; }
       // Kita gunakan FormData agar bisa mengirim kombinasi JSON string dan file (gambar) massal
       const formData = new FormData();
       
@@ -671,7 +671,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
                     onChange={(e) => setImage(e.target.files?.[0] ?? null)}
                   />
                 </label>
-                {image && <p className="table-muted mt-2">Foto baru: {image.name}</p>}
+                {image && <p className="table-muted mt-2">Foto baru: {image.name}</p>}<p className="table-muted mt-2">Foto otomatis dipotong 1:1 dan disimpan sebagai JPG di bawah 1 MB. Maksimal file awal 20 MB.</p>
               </div>
             </div>
             <div className="modal-foot">
@@ -712,7 +712,7 @@ export default function InventoryPage({ habis = false }: { habis?: boolean }) {
                   <section className="bulk-item-card" key={row.id_barang}>
                     <div className="bulk-item-heading"><span className="badge">{row.id_barang}</span><span className="bulk-item-number">Barang {index + 1} dari {bulkRows.length}</span></div>
                     <div className="form-group"><label className="form-label">Nama barang</label><input className="field" value={row.nama_barang} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, nama_barang: e.target.value } : v))} required /></div>
-                    <div className="form-group"><label className="form-label">Foto baru (opsional)</label><input type="file" accept="image/jpeg,image/png,image/webp" className="field bulk-image-input" onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, newImage: e.target.files?.[0] ?? null } : v))} />{row.newImage && <div className="bulk-file-name">{row.newImage.name}</div>}</div>
+                    <div className="form-group"><label className="form-label">Foto baru (opsional)</label><input type="file" accept="image/jpeg,image/png,image/webp" className="field bulk-image-input" onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, newImage: e.target.files?.[0] ?? null } : v))} />{row.newImage && <div className="bulk-file-name">{row.newImage.name}</div>}<small className="table-muted">Otomatis crop 1:1 dan kompres di bawah 1 MB (file awal maks. 20 MB).</small></div>
                     <div className="bulk-item-grid">
                       <div className="form-group"><label className="form-label">Kategori</label><select className="select-field" value={row.kategori} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, kategori: e.target.value } : v))}>{visibleCategories.map((cat) => <option key={cat}>{cat}</option>)}</select></div>
                       <div className="form-group"><label className="form-label">Tanggal expired</label><input type="date" className="field" value={row.expired} onChange={(e) => setBulkRows((old) => old.map((v, i) => i === index ? { ...v, expired: e.target.value } : v))} /></div>
