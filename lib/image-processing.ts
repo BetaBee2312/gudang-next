@@ -26,12 +26,30 @@ const ENCODING_PRESETS = [
 export async function compressSquareJpeg(input: Buffer): Promise<Buffer> {
   if (!input.length) throw new Error("File gambar kosong.");
 
+  // Terapkan orientasi kamera lebih dulu agar hitungan crop memakai dimensi aktual.
+  const oriented = await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
+    .rotate()
+    .toBuffer();
+  const metadata = await sharp(oriented).metadata();
+
+  if (!metadata.width || !metadata.height) {
+    throw new Error("Dimensi gambar tidak dapat dibaca.");
+  }
+
+  // Crop menjadi persegi sebelum resize. Ini tetap 1:1 bahkan untuk foto kecil.
+  const squareSide = Math.min(metadata.width, metadata.height);
+  const squareInput = await sharp(oriented)
+    .resize(squareSide, squareSide, {
+      fit: "cover",
+      position: "attention",
+      withoutEnlargement: true,
+    })
+    .toBuffer();
+
   for (const preset of ENCODING_PRESETS) {
-    const output = await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
-      .rotate()
+    const output = await sharp(squareInput)
       .resize(preset.size, preset.size, {
-        fit: "cover",
-        position: "attention",
+        fit: "inside",
         withoutEnlargement: true,
       })
       .flatten({ background: "#ffffff" })
